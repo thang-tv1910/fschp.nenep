@@ -436,7 +436,7 @@ body{background:#eef2f7}
 </div>
 
 <script>
-const API = 'http://127.0.0.1:8000';
+const API = window.location.origin;
 const APP = {allRows:[], filteredRows:[], charts:{}, perms:null, user:null, violationStudents:[], currentTab:'overview', filesCache:null, auditCache:null};
 const FK = ['month','week','level','grade','className','category','issue'];
 const C = {orange:'#F36F21',blue:'#005BAC',green:'#5CB85C',red:'#dc2626',purple:'#7c5cfc',teal:'#0d9488',pink:'#db2777',amber:'#d97706',slate:'#64748b',sky:'#0284c7'};
