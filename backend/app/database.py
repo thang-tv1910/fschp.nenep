@@ -3,9 +3,6 @@ from pathlib import Path
 from app.config import get_settings
 from app.security import hash_password
 
-settings = get_settings()
-DB_PATH = Path(settings.db_path)
-
 POINT_RULES = [
     (1, "Học sinh có hành động tích cực", 5, "khen", ""),
     (2, "Tham gia hỗ trợ sự kiện", 3, "khen", "Tính theo học sinh"),
@@ -62,13 +59,18 @@ POINT_RULES = [
 ]
 
 
+def db_path() -> Path:
+    return Path(get_settings().db_path)
+
+
 def get_conn():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(db_path())
     conn.row_factory = sqlite3.Row
     return conn
 
 
 def init_db():
+    settings = get_settings()
     conn = get_conn()
     cur = conn.cursor()
 
