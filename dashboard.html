@@ -514,7 +514,7 @@ function buildTabs(){
 function switchTab(tid){
   APP.currentTab = tid;
 
-  document.querySelectorAll('.nav-item').forEach(b=>{
+  document.querySelectorAll('.tab-btn').forEach(b=>{
     b.classList.toggle('active', b.dataset.tab === tid);
   });
 
@@ -548,19 +548,16 @@ function switchTab(tid){
 
   window.scrollTo({top:0, behavior:'auto'});
 
-  setTimeout(()=>{
-    renderTabOnly(tid);
+  requestAnimationFrame(()=>{
+  renderTabOnly(tid);
 
-    if(tid==='admin'){
-      switchRecordsSubtab('file', false);
-      populateQuickClassOptions();
-    }
+  if(tid==='admin'){
+    switchRecordsSubtab('file', false);
+    populateQuickClassOptions();
+  }
 
-    if(tid==='audit') loadAuditLogs(false);
-    if(tid==='users') renderUsersTable();
-
-  }, 50);
-}
+  if(tid==='audit') loadAuditLogs(false);
+});
 
 function renderTabOnly(tid){
   if(!APP.viewCache) buildViewCache();
