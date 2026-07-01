@@ -8,6 +8,15 @@ BACKEND_DIR = PROJECT_ROOT / "backend"
 FRONTEND_DIR = PROJECT_ROOT / "frontend"
 
 
+BOOTSTRAP_USER_DEFAULTS = {
+    "ADMIN": ("admin", "admin", "Administrator", "all"),
+    "BGH": ("bgh", "bangiamhieu", "Ban Giám Hiệu", "all"),
+    "QUANLY": ("quanly", "quanly", "Quản lý trường", "all"),
+    "GIAMTHI": ("giamthi", "giamthi", "Bộ phận Giám thị", "giamthi"),
+    "BANTRU": ("bantru", "bantru", "Bộ phận Bán trú", "bantru"),
+}
+
+
 class Settings:
     def __init__(self) -> None:
         self.secret_key = self._required("FSCHP_SECRET_KEY", min_length=32)
@@ -35,6 +44,7 @@ class Settings:
         self.bootstrap_admin_username = os.getenv("FSCHP_BOOTSTRAP_ADMIN_USERNAME", "").strip()
         self.bootstrap_admin_password = os.getenv("FSCHP_BOOTSTRAP_ADMIN_PASSWORD", "")
         self.bootstrap_admin_display_name = os.getenv("FSCHP_BOOTSTRAP_ADMIN_DISPLAY_NAME", "Administrator")
+        self.bootstrap_users = self._bootstrap_users()
 
     @staticmethod
     def _required(name: str, min_length: int = 1) -> str:
@@ -70,6 +80,22 @@ class Settings:
         if raw_value is None:
             return default
         return raw_value.strip().lower() in {"1", "true", "yes", "on"}
+
+    def _bootstrap_users(self) -> list[dict[str, str]]:
+        users: list[dict[str, str]] = []
+        for key, (default_username, role, default_display_name, folder) in BOOTSTRAP_USER_DEFAULTS.items():
+            username = os.getenv(f"FSCHP_BOOTSTRAP_{key}_USERNAME", default_username).strip()
+            password = os.getenv(f"FSCHP_BOOTSTRAP_{key}_PASSWORD", "")
+            display_name = os.getenv(f"FSCHP_BOOTSTRAP_{key}_DISPLAY_NAME", default_display_name).strip()
+            if username and password:
+                users.append({
+                    "username": username,
+                    "password": password,
+                    "role": role,
+                    "display_name": display_name or default_display_name,
+                    "folder": folder,
+                })
+        return users
 
 
 @lru_cache

@@ -145,16 +145,35 @@ def init_db():
         );
     """)
 
-    existing_users = cur.execute("SELECT COUNT(*) FROM users").fetchone()[0]
-    if existing_users == 0 and settings.bootstrap_admin_username and settings.bootstrap_admin_password:
+    legacy_admin = []
+    if settings.bootstrap_admin_username and settings.bootstrap_admin_password:
+        legacy_admin.append({
+            "username": settings.bootstrap_admin_username,
+            "password": settings.bootstrap_admin_password,
+            "role": "admin",
+            "display_name": settings.bootstrap_admin_display_name,
+            "folder": "all",
+        })
+
+    bootstrap_users = settings.bootstrap_users or legacy_admin
+    for user in bootstrap_users:
         cur.execute(
-            "INSERT INTO users (username, password, role, display_name, folder) VALUES (?,?,?,?,?)",
+            """
+            INSERT INTO users (username, password, role, display_name, folder, is_active)
+            VALUES (?, ?, ?, ?, ?, 1)
+            ON CONFLICT(username) DO UPDATE SET
+                password=excluded.password,
+                role=excluded.role,
+                display_name=excluded.display_name,
+                folder=excluded.folder,
+                is_active=1
+            """,
             (
-                settings.bootstrap_admin_username,
-                hash_password(settings.bootstrap_admin_password),
-                "admin",
-                settings.bootstrap_admin_display_name,
-                "all",
+                user["username"],
+                hash_password(user["password"]),
+                user["role"],
+                user["display_name"],
+                user["folder"],
             )
         )
 
