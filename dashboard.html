@@ -514,15 +514,20 @@ function buildTabs(){
 function switchTab(tid){
   APP.currentTab = tid;
 
-  document.querySelectorAll('.tab-btn').forEach(b=>{
-    b.classList.toggle('active', b.dataset.tab === tid);
+  // 1) Đổi trạng thái sidebar ngay lập tức
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.classList.remove('active');
   });
 
-  document.querySelectorAll('.tab-content').forEach(s=>{
-    s.classList.remove('active');
+  const activeBtn = document.querySelector(`.tab-btn[data-tab="${tid}"]`);
+  if(activeBtn) activeBtn.classList.add('active');
+
+  // 2) Đổi nội dung tab ngay lập tức
+  document.querySelectorAll('.tab-content').forEach(sec=>{
+    sec.classList.remove('active');
   });
 
-  const tabEl = el('tab_'+tid);
+  const tabEl = el('tab_' + tid);
   if(tabEl) tabEl.classList.add('active');
 
   const titles = {
@@ -537,27 +542,29 @@ function switchTab(tid){
   };
 
   if(el('pageTitle') && titles[tid]){
-    el('pageTitle').textContent=titles[tid][0];
-    el('pageDesc').textContent=titles[tid][1];
+    el('pageTitle').textContent = titles[tid][0];
+    el('pageDesc').textContent = titles[tid][1];
   }
 
-  el('filtersSection').style.display =
-    (tid==='admin'||tid==='audit'||tid==='users'||tid==='settings')
-      ? 'none'
-      : '';
+  if(el('filtersSection')){
+    el('filtersSection').style.display =
+      ['admin','audit','users','settings'].includes(tid) ? 'none' : '';
+  }
 
   window.scrollTo({top:0, behavior:'auto'});
 
-  requestAnimationFrame(()=>{
-  renderTabOnly(tid);
+  // 3) Render phần nặng sau khi UI đã phản hồi
+  setTimeout(()=>{
+    renderTabOnly(tid);
 
-  if(tid==='admin'){
-    switchRecordsSubtab('file', false);
-    populateQuickClassOptions();
-  }
+    if(tid === 'admin'){
+      switchRecordsSubtab('file', false);
+      populateQuickClassOptions();
+    }
 
-  if(tid==='audit') loadAuditLogs(false);
-});
+    if(tid === 'audit') loadAuditLogs(false);
+  }, 0);
+}
 
 function renderTabOnly(tid){
   if(!APP.viewCache) buildViewCache();
@@ -914,7 +921,7 @@ async function loadFiles(force=false){
     if(el('adminStatus')) el('adminStatus').textContent=files.length+' file · '+files.reduce((s,f)=>s+(f.row_count||0),0)+' dòng';
     if(!el('fileList')) return;
     if(!files.length){el('fileList').innerHTML='<div class="empty-state"><div class="icon">📂</div><p>Chưa có file</p></div>';return}
-    el('fileList').innerHTML=files.map(f=>{
+    el('fileList').innerHTML=files.slice(0,50).map(f=>{
       const badge=f.status==='OK'?'<span class="badge badge-ok">OK</span>':'<span class="badge badge-err">'+esc(f.status)+'</span>';
       const dt=f.imported_at?new Date(f.imported_at).toLocaleString('vi-VN'):'';
       const canDel=APP.perms?.can_delete_files === true;
@@ -972,7 +979,7 @@ function renderAuditLogs(logs){
     el('tableAudit').innerHTML = '<div class="empty-state"><div class="icon">🧾</div><p>Chưa có lịch sử chỉnh sửa</p></div>';
     return;
   }
-  mkTable('tableAudit', ['Thời gian','Thao tác','File','Folder','Người thực hiện','Dòng cũ','Dòng mới','Lý do','Pass'], logs.map(l=>[
+  mkTable('tableAudit', ['Thời gian','Thao tác','File','Folder','Người thực hiện','Dòng cũ','Dòng mới','Lý do','Pass'], logs.slice(0,100).map(l=>[
     esc(l.created_at ? new Date(l.created_at).toLocaleString('vi-VN') : ''),
     auditActionBadge(l.action),
     esc(l.file_name),
