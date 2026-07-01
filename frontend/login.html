@@ -1,216 +1,332 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Đăng nhập — Nề nếp FSCHP</title>
+<title>ÄÄƒng nháº­p â€” Ná» náº¿p FSCHP</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --fpt-orange: #F36F21;
-    --fpt-orange-dark: #d45e14;
+    --fpt-orange: #F37021;
+    --fpt-orange-hover: #e05f10;
     --fpt-blue: #005BAC;
     --fpt-navy: #0A1628;
-    --fpt-navy-2: #111d35;
-    --fpt-navy-3: #192644;
-    --text-primary: #f0f4ff;
-    --text-secondary: #8fa4c8;
-    --text-muted: #4d6080;
-    --input-bg: rgba(255,255,255,0.06);
-    --input-border: rgba(255,255,255,0.12);
-    --input-border-focus: #F36F21;
-    --error: #ff6b6b;
-    --success: #4ade80;
+    --fpt-navy-light: #16253b;
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --text-muted: #64748B;
+    --input-bg: rgba(15, 23, 42, 0.4);
+    --input-border: rgba(148, 163, 184, 0.15);
+    --input-border-focus: #F37021;
+    --error: #EF4444;
+    --success: #10B981;
+    --glass-bg: rgba(30, 41, 59, 0.45);
+    --glass-border: rgba(255, 255, 255, 0.06);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
   }
 
   html, body {
     height: 100%;
     font-family: 'Geist', Arial, sans-serif;
-    background: var(--fpt-navy);
+    background-color: var(--fpt-navy);
     color: var(--text-primary);
     overflow: hidden;
   }
 
-  /* ── Background grid + glow ── */
+  /* â”€â”€ Background grid + glow â”€â”€ */
   .bg {
     position: fixed; inset: 0; z-index: 0;
-    background:
-      linear-gradient(135deg, #0d1a2e 0%, #0A1628 50%, #0d1520 100%);
+    background: radial-gradient(circle at 50% 50%, #0f1e36 0%, #0A1628 100%);
   }
   .bg::before {
     content: '';
     position: absolute; inset: 0;
     background-image:
-      linear-gradient(rgba(0,91,172,0.08) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,91,172,0.08) 1px, transparent 1px);
-    background-size: 48px 48px;
-  }
-  .glow-orange {
-    position: absolute; top: -120px; right: -80px;
-    width: 500px; height: 500px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(243,111,33,0.15) 0%, transparent 65%);
-    pointer-events: none;
-  }
-  .glow-blue {
-    position: absolute; bottom: -100px; left: -100px;
-    width: 400px; height: 400px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(0,91,172,0.18) 0%, transparent 65%);
-    pointer-events: none;
+      linear-gradient(rgba(243, 112, 33, 0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(243, 112, 33, 0.02) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(circle, black, transparent 80%);
+    -webkit-mask-image: radial-gradient(circle, black, transparent 80%);
   }
 
-  /* ── Layout ── */
+  .glow-orange {
+    position: absolute; top: -10%; right: -5%;
+    width: 60vw; height: 60vw; border-radius: 50%;
+    background: radial-gradient(circle, rgba(243,111,33,0.08) 0%, transparent 70%);
+    pointer-events: none;
+    animation: floatingGlow 15s ease-in-out infinite alternate;
+  }
+  .glow-blue {
+    position: absolute; bottom: -10%; left: -5%;
+    width: 50vw; height: 50vw; border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,91,172,0.12) 0%, transparent 70%);
+    pointer-events: none;
+    animation: floatingGlow 18s ease-in-out infinite alternate-reverse;
+  }
+
+  @keyframes floatingGlow {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(4%, 4%) scale(1.1); }
+  }
+
+  /* â”€â”€ Layout â”€â”€ */
   .layout {
     position: relative; z-index: 1;
     display: flex; height: 100vh;
   }
 
-  /* Left panel — branding */
+  /* Left panel â€” branding */
   .panel-left {
-    flex: 1;
+    flex: 1.2;
     display: flex; flex-direction: column;
     justify-content: center; align-items: flex-start;
-    padding: 0 64px;
-    border-right: 1px solid rgba(255,255,255,0.06);
+    padding: 0 80px;
+    border-right: 1px solid rgba(255,255,255,0.04);
+    background: linear-gradient(135deg, rgba(10, 22, 40, 0.2) 0%, rgba(10, 22, 40, 0) 100%);
+    animation: slideInLeft 0.8s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .brand-logo {
-    display: inline-flex; flex-direction: column; align-items: center; gap: 10px;
-    margin-bottom: 56px;
+    display: inline-flex; align-items: center; gap: 14px;
+    margin-bottom: 64px;
   }
   .brand-mark {
-    display: inline-flex; align-items: center; justify-content: center; gap: 3px;
-    transform: skew(-8deg);
+    display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+    transform: skew(-6deg);
   }
   .brand-mark span {
-    width: 40px; height: 46px;
+    width: 38px; height: 42px;
     display: flex; align-items: center; justify-content: center;
-    border-radius: 8px;
-    color: #fff; font-size: 23px; font-weight: 900; font-style: italic;
-    box-shadow: 0 12px 28px rgba(0,0,0,0.24);
+    border-radius: 6px;
+    color: #fff; font-size: 20px; font-weight: 900; font-style: italic;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   }
-  .brand-mark span:nth-child(1){background:#2674c8}
-  .brand-mark span:nth-child(2){background:#f36f21}
-  .brand-mark span:nth-child(3){background:#38b24a}
+  .brand-mark span:nth-child(1){background:#005BAC}
+  .brand-mark span:nth-child(2){background:#F37021}
+  .brand-mark span:nth-child(3){background:#16A34A}
+
   .brand-title {
-    color: var(--fpt-orange);
-    font-size: 21px; font-weight: 900; letter-spacing: 0.04em;
+    color: var(--text-primary);
+    font-size: 16px; font-weight: 800; letter-spacing: 0.1em;
     line-height: 1; text-transform: uppercase;
   }
 
   .panel-headline {
-    font-size: 40px; font-weight: 700; line-height: 1.2;
+    font-size: 44px; font-weight: 800; line-height: 1.15;
     color: var(--text-primary);
-    margin-bottom: 20px;
-    max-width: 420px;
+    margin-bottom: 24px;
+    max-width: 520px;
+    letter-spacing: -0.02em;
   }
   .panel-headline span {
     color: var(--fpt-orange);
   }
   .panel-sub {
-    font-size: 15px; color: var(--text-secondary); line-height: 1.7;
-    max-width: 380px; margin-bottom: 52px;
+    font-size: 15px; color: var(--text-secondary); line-height: 1.65;
+    max-width: 440px; margin-bottom: 56px;
   }
 
   .role-chips {
-    display: flex; flex-wrap: wrap; gap: 10px;
+    display: flex; flex-wrap: wrap; gap: 12px;
   }
   .chip {
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px 14px;
-    border-radius: 8px;
-    border: 1px solid rgba(255,255,255,0.1);
-    background: rgba(255,255,255,0.04);
-    font-size: 12px; color: var(--text-secondary);
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 16px;
+    border-radius: 99px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.02);
+    font-size: 13px; color: var(--text-secondary);
     font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity: 0;
+    animation: slideInLeft 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .chip:nth-child(1) { animation-delay: 0.3s; }
+  .chip:nth-child(2) { animation-delay: 0.4s; }
+  .chip:nth-child(3) { animation-delay: 0.5s; }
+  .chip:nth-child(4) { animation-delay: 0.6s; }
+
+  .chip:hover {
+    border-color: rgba(243, 112, 33, 0.4);
+    background: rgba(243, 112, 33, 0.05);
+    color: var(--text-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(243, 112, 33, 0.1);
   }
   .chip-dot {
     width: 6px; height: 6px; border-radius: 50%;
+    box-shadow: 0 0 8px currentColor;
   }
 
-  /* Right panel — form */
+  /* Right panel â€” form */
   .panel-right {
-    width: 460px; flex-shrink: 0;
+    width: 480px; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
-    padding: 48px 52px;
-    background: rgba(255,255,255,0.025);
+    padding: 48px;
+    background: rgba(10, 22, 40, 0.4);
+    backdrop-filter: blur(10px);
+    border-left: 1px solid rgba(255,255,255,0.04);
+    animation: fadeInRight 0.8s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .form-card { width: 100%; }
+  .form-card {
+    width: 100%;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    padding: 40px;
+    border-radius: 16px;
+    backdrop-filter: blur(16px);
+    opacity: 0;
+    transform: translateY(20px);
+    animation: cardEntrance 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
 
-  .form-header { margin-bottom: 36px; }
+  @keyframes cardEntrance {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .form-header { margin-bottom: 32px; }
   .form-header h2 {
     font-size: 26px; font-weight: 700;
-    color: var(--text-primary); margin-bottom: 6px;
+    color: var(--text-primary); margin-bottom: 8px;
+    letter-spacing: -0.01em;
   }
   .form-header p { font-size: 14px; color: var(--text-secondary); }
 
-  .form-group { margin-bottom: 20px; }
+  .form-group {
+    margin-bottom: 22px;
+    position: relative;
+    opacity: 0;
+    transform: translateY(10px);
+    animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .form-group:nth-child(1) { animation-delay: 0.15s; }
+  .form-group:nth-child(2) { animation-delay: 0.25s; }
+  .form-group:nth-child(3) { animation-delay: 0.35s; }
+
+  @keyframes fadeInUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
   label {
-    display: block; font-size: 12px; font-weight: 600;
-    color: var(--text-secondary); letter-spacing: 0.8px;
+    display: block; font-size: 11px; font-weight: 700;
+    color: var(--text-secondary); letter-spacing: 0.1em;
     text-transform: uppercase; margin-bottom: 8px;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transform-origin: left center;
+  }
+  .form-group:focus-within label, .form-group:hover label {
+    color: var(--fpt-orange);
+    transform: translate(4px, -1px);
   }
 
   .input-wrap { position: relative; }
   .input-wrap .field-icon {
-    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
-    width: 16px; height: 16px; color: var(--text-muted);
-    pointer-events: none; transition: color 0.2s;
+    position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+    width: 18px; height: 18px; color: var(--text-muted);
+    pointer-events: none; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
+
   input[type="text"], input[type="password"] {
-    width: 100%; padding: 13px 14px 13px 42px;
+    width: 100%; padding: 14px 16px 14px 46px;
     background: var(--input-bg);
     border: 1px solid var(--input-border);
     border-radius: 10px;
     color: var(--text-primary); font-size: 15px;
     font-family: inherit;
     outline: none;
-    transition: border-color 0.2s, background 0.2s;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  input:hover {
+    border-color: rgba(243, 112, 33, 0.4);
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateY(-1px);
   }
   input:focus {
     border-color: var(--input-border-focus);
-    background: rgba(243,111,33,0.06);
+    background: rgba(243, 112, 33, 0.05);
+    box-shadow: 0 0 0 4px rgba(243, 112, 33, 0.15), 0 8px 24px rgba(0, 0, 0, 0.25);
+    transform: translateY(-2px);
   }
-  input:focus ~ .field-icon, .input-wrap:focus-within .field-icon { color: var(--fpt-orange); }
+  .input-wrap:focus-within .field-icon {
+    color: var(--fpt-orange);
+    transform: translateY(-50%) scale(1.15);
+  }
   #password { padding-right: 52px; }
 
   .pass-toggle {
-    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
-    width: 36px; height: 36px; border-radius: 9px;
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    width: 36px; height: 36px; border-radius: 8px;
     background: transparent; border: none; cursor: pointer;
     color: var(--text-muted); padding: 0;
     display: flex; align-items: center; justify-content: center;
-    transition: color 0.2s, background 0.2s;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .pass-toggle svg { width: 18px; height: 18px; display: block; pointer-events: none; }
-  .pass-toggle:hover { color: var(--text-secondary); background: rgba(255,255,255,0.06); }
-  .pass-toggle:focus-visible { outline: 2px solid var(--fpt-orange); outline-offset: 2px; }
+  .pass-toggle:hover {
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.08);
+    transform: translateY(-50%) scale(1.08);
+  }
+  .pass-toggle:active {
+    transform: translateY(-50%) scale(0.92);
+  }
+  .pass-toggle:focus-visible { outline: 2px solid var(--fpt-orange); }
 
   .error-msg {
     display: none; margin-top: 8px;
     font-size: 13px; color: var(--error);
-    align-items: center; gap: 6px;
+    align-items: center; gap: 8px;
+    animation: slideDown 0.3s ease;
   }
   .error-msg.show { display: flex; }
 
   .btn-login {
     width: 100%; padding: 14px;
-    margin-top: 8px;
+    margin-top: 12px;
     background: var(--fpt-orange);
     border: none; border-radius: 10px;
     color: #fff; font-size: 15px; font-weight: 600;
     font-family: inherit; cursor: pointer;
-    transition: background 0.2s, transform 0.1s;
     display: flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: 0 4px 14px rgba(243, 112, 33, 0.3);
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(10px);
+    animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation-delay: 0.45s;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .btn-login:hover { background: var(--fpt-orange-dark); }
-  .btn-login:active { transform: scale(0.99); }
-  .btn-login:disabled { opacity: 0.6; cursor: not-allowed; }
+  .btn-login::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 50%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+    transform: skewX(-25deg);
+    transition: 0.75s;
+  }
+  .btn-login:hover::after {
+    left: 120%;
+  }
+  .btn-login:hover {
+    background: var(--fpt-orange-hover);
+    box-shadow: 0 6px 20px rgba(243, 112, 33, 0.45);
+    transform: translateY(-2px);
+  }
+  .btn-login:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 10px rgba(243, 112, 33, 0.2);
+  }
+  .btn-login:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+
   .btn-login .spinner {
-    width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3);
+    width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3);
     border-top-color: #fff; border-radius: 50%;
     animation: spin 0.6s linear infinite;
     display: none;
@@ -221,8 +337,12 @@
   @keyframes spin { to { transform: rotate(360deg); } }
 
   .divider {
-    display: flex; align-items: center; gap: 12px;
-    margin: 24px 0; color: var(--text-muted); font-size: 12px;
+    display: flex; align-items: center; gap: 16px;
+    margin: 28px 0; color: var(--text-muted); font-size: 12px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    opacity: 0;
+    animation: fadeInSimple 0.8s ease forwards;
+    animation-delay: 0.55s;
   }
   .divider::before, .divider::after {
     content: ''; flex: 1; height: 1px;
@@ -230,69 +350,138 @@
   }
 
   .user-hint {
-    background: rgba(0,91,172,0.12);
-    border: 1px solid rgba(0,91,172,0.25);
-    border-radius: 10px; padding: 14px;
-    font-size: 12px; color: var(--text-secondary);
+    background: rgba(0, 91, 172, 0.08);
+    border: 1px solid rgba(0, 91, 172, 0.18);
+    border-radius: 10px; padding: 14px 16px;
+    font-size: 13px; color: var(--text-secondary);
     line-height: 1.6;
+    opacity: 0;
+    animation: fadeInSimple 0.8s ease forwards;
+    animation-delay: 0.6s;
+    transition: all 0.3s ease;
   }
-  .user-hint strong { color: var(--fpt-blue); font-weight: 600; }
+  .user-hint:hover {
+    background: rgba(0, 91, 172, 0.12);
+    border-color: rgba(0, 91, 172, 0.3);
+  }
+  .user-hint strong { color: #5aa1e3; font-weight: 600; }
 
-  /* ── User info card (after login) ── */
+  /* â”€â”€ User info card (after login) â”€â”€ */
   .logged-in-card {
     display: none;
     text-align: center;
+    animation: fadeIn 0.4s ease;
   }
   .avatar {
-    width: 72px; height: 72px; border-radius: 50%;
+    width: 80px; height: 80px; border-radius: 50%;
     background: linear-gradient(135deg, var(--fpt-orange), var(--fpt-blue));
-    margin: 0 auto 16px;
+    margin: 0 auto 20px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 26px; font-weight: 700; color: #fff;
+    font-size: 28px; font-weight: 700; color: #fff;
+    box-shadow: 0 8px 24px rgba(243,111,33,0.25);
+    border: 3px solid rgba(255,255,255,0.1);
   }
-  .logged-name { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .logged-name { font-size: 22px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.01em; }
   .logged-role {
-    display: inline-block; padding: 4px 12px;
-    background: rgba(243,111,33,0.15); border: 1px solid rgba(243,111,33,0.3);
-    border-radius: 20px; font-size: 12px; color: var(--fpt-orange); font-weight: 600;
-    margin-bottom: 24px;
+    display: inline-block; padding: 4px 14px;
+    background: rgba(243,111,33,0.1); border: 1px solid rgba(243,111,33,0.2);
+    border-radius: 99px; font-size: 12px; color: var(--fpt-orange); font-weight: 600;
+    margin-bottom: 28px;
+    text-transform: uppercase; letter-spacing: 0.05em;
   }
   .btn-dashboard {
-    width: 100%; padding: 13px;
+    width: 100%; padding: 14px;
     background: var(--fpt-orange); border: none; border-radius: 10px;
     color: #fff; font-size: 15px; font-weight: 600; font-family: inherit;
-    cursor: pointer; margin-bottom: 10px;
-    transition: background 0.2s;
+    cursor: pointer; margin-bottom: 12px;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 14px rgba(243, 112, 33, 0.3);
   }
-  .btn-dashboard:hover { background: var(--fpt-orange-dark); }
+  .btn-dashboard:hover {
+    background: var(--fpt-orange-hover);
+    box-shadow: 0 6px 18px rgba(243, 112, 33, 0.4);
+  }
   .btn-logout {
-    width: 100%; padding: 12px;
-    background: transparent; border: 1px solid rgba(255,255,255,0.12);
+    width: 100%; padding: 13px;
+    background: transparent; border: 1px solid rgba(255,255,255,0.1);
     border-radius: 10px; color: var(--text-secondary);
     font-size: 14px; font-family: inherit; cursor: pointer;
-    transition: border-color 0.2s, color 0.2s;
+    transition: all 0.2s ease;
   }
-  .btn-logout:hover { border-color: var(--error); color: var(--error); }
+  .btn-logout:hover { border-color: var(--error); color: var(--error); background: rgba(239, 68, 68, 0.05); }
 
-  /* ── Responsive ── */
+  /* Animations */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeInSimple {
+    to { opacity: 1; }
+  }
+  @keyframes fadeInRight {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* â”€â”€ Responsive â”€â”€ */
+  .mobile-brand {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .mobile-brand .brand-mark {
+    display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+    transform: skew(-6deg);
+  }
+  .mobile-brand .brand-mark span {
+    width: 32px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px;
+    color: #fff; font-size: 16px; font-weight: 900; font-style: italic;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  }
+  .mobile-brand .brand-mark span:nth-child(1){background:#005BAC}
+  .mobile-brand .brand-mark span:nth-child(2){background:#F37021}
+  .mobile-brand .brand-mark span:nth-child(3){background:#16A34A}
+
+  .mobile-brand .brand-title {
+    color: var(--text-primary);
+    font-size: 14px; font-weight: 800; letter-spacing: 0.1em;
+    line-height: 1; text-transform: uppercase;
+  }
+
   @media (max-width: 900px) {
     .panel-left { display: none; }
-    .panel-right { width: 100%; }
+    .panel-right { width: 100%; border-left: none; padding: 24px; }
+    .form-card { padding: 32px 24px; }
+    .mobile-brand { display: flex; }
   }
 
-  /* ── Toast ── */
+  /* â”€â”€ Toast â”€â”€ */
   .toast {
-    position: fixed; bottom: 28px; right: 28px; z-index: 999;
-    padding: 14px 20px; border-radius: 10px;
+    position: fixed; bottom: 32px; right: 32px; z-index: 999;
+    padding: 16px 24px; border-radius: 12px;
     font-size: 14px; font-weight: 500;
-    display: flex; align-items: center; gap: 10px;
-    transform: translateY(80px); opacity: 0;
-    transition: transform 0.3s ease, opacity 0.3s ease;
-    max-width: 320px;
+    display: flex; align-items: center; gap: 12px;
+    transform: translateY(100px); opacity: 0;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    max-width: 360px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(8px);
   }
   .toast.show { transform: translateY(0); opacity: 1; }
-  .toast.success { background: #162b1e; border: 1px solid #2d6a4f; color: var(--success); }
-  .toast.error { background: #2b1616; border: 1px solid #6a2d2d; color: var(--error); }
+  .toast.success { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--success); }
+  .toast.error { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: var(--error); }
 </style>
 </head>
 <body>
@@ -304,7 +493,7 @@
 
 <div class="layout">
 
-  <!-- ── LEFT PANEL ── -->
+  <!-- â”€â”€ LEFT PANEL â”€â”€ -->
   <div class="panel-left">
     <div class="brand-logo">
       <div class="brand-mark" aria-label="FPT">
@@ -316,52 +505,60 @@
     </div>
 
     <h1 class="panel-headline">
-      Quản lý<br><span>Thi đua Nề nếp</span><br>học sinh
+      Quáº£n lÃ½<br><span>Thi Ä‘ua Ná» náº¿p</span><br>há»c sinh
     </h1>
     <p class="panel-sub">
-      Theo dõi, phân tích và báo cáo điểm nề nếp toàn trường — 
-      tập trung dữ liệu, phân quyền rõ ràng theo từng bộ phận.
+      Theo dÃµi, phÃ¢n tÃ­ch vÃ  bÃ¡o cÃ¡o Ä‘iá»ƒm ná» náº¿p toÃ n trÆ°á»ng â€”
+      táº­p trung dá»¯ liá»‡u, phÃ¢n quyá»n rÃµ rÃ ng theo tá»«ng bá»™ pháº­n.
     </p>
 
     <div class="role-chips">
-      <div class="chip"><div class="chip-dot" style="background:#F36F21"></div>Quản trị viên</div>
-      <div class="chip"><div class="chip-dot" style="background:#005BAC"></div>Quản lý trường</div>
-      <div class="chip"><div class="chip-dot" style="background:#4ade80"></div>Bộ phận Giám thị</div>
-      <div class="chip"><div class="chip-dot" style="background:#a78bfa"></div>Bộ phận Bán trú</div>
+      <div class="chip"><div class="chip-dot" style="background:#F37021"></div>Quáº£n trá»‹ viÃªn</div>
+      <div class="chip"><div class="chip-dot" style="background:#005BAC"></div>Quáº£n lÃ½ trÆ°á»ng</div>
+      <div class="chip"><div class="chip-dot" style="background:#4ade80"></div>Bá»™ pháº­n GiÃ¡m thá»‹</div>
+      <div class="chip"><div class="chip-dot" style="background:#a78bfa"></div>Bá»™ pháº­n BÃ¡n trÃº</div>
     </div>
   </div>
 
-  <!-- ── RIGHT PANEL (Form) ── -->
+  <!-- â”€â”€ RIGHT PANEL (Form) â”€â”€ -->
   <div class="panel-right">
     <div class="form-card">
 
       <!-- LOGIN FORM -->
       <div id="loginForm">
+        <div class="mobile-brand">
+          <div class="brand-mark" aria-label="FPT">
+            <span>F</span>
+            <span>P</span>
+            <span>T</span>
+          </div>
+          <div class="brand-title">FPT SCHOOLS</div>
+        </div>
         <div class="form-header">
-          <h2>Đăng nhập</h2>
-          <p>Nhập tài khoản được cấp bởi quản trị viên</p>
+          <h2>ÄÄƒng nháº­p</h2>
+          <p>Nháº­p tÃ i khoáº£n Ä‘Æ°á»£c cáº¥p bá»Ÿi quáº£n trá»‹ viÃªn</p>
         </div>
 
         <div class="form-group">
-          <label for="username">Tên đăng nhập</label>
+          <label for="username">TÃªn Ä‘Äƒng nháº­p</label>
           <div class="input-wrap">
             <svg class="field-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
               <circle cx="12" cy="7" r="4"/>
             </svg>
-            <input type="text" id="username" placeholder="Nhập username..." autocomplete="username">
+            <input type="text" id="username" placeholder="Nháº­p username..." autocomplete="username">
           </div>
         </div>
 
         <div class="form-group">
-          <label for="password">Mật khẩu</label>
+          <label for="password">Máº­t kháº©u</label>
           <div class="input-wrap">
             <svg class="field-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
               <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             </svg>
-            <input type="password" id="password" placeholder="Nhập mật khẩu..." autocomplete="current-password">
-            <button class="pass-toggle" type="button" id="togglePass" title="Hiện mật khẩu" aria-label="Hiện mật khẩu" aria-pressed="false">
+            <input type="password" id="password" placeholder="Nháº­p máº­t kháº©u..." autocomplete="current-password">
+            <button class="pass-toggle" type="button" id="togglePass" title="Hiá»‡n máº­t kháº©u" aria-label="Hiá»‡n máº­t kháº©u" aria-pressed="false">
               <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                 <circle cx="12" cy="12" r="3"/>
@@ -372,13 +569,13 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
             </svg>
-            <span id="errorText">Sai tên đăng nhập hoặc mật khẩu</span>
+            <span id="errorText">Sai tÃªn Ä‘Äƒng nháº­p hoáº·c máº­t kháº©u</span>
           </div>
         </div>
 
         <button class="btn-login" id="btnLogin">
           <div class="spinner"></div>
-          <span class="btn-text">Đăng nhập</span>
+          <span class="btn-text">ÄÄƒng nháº­p</span>
         </button>
 
       </div>
@@ -388,9 +585,9 @@
         <div class="avatar" id="avatarLetter">Q</div>
         <div class="logged-name" id="loggedName">Quan tri vien</div>
         <div class="logged-role" id="loggedRole">admin</div>
-        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:28px;">Đăng nhập thành công. Chuyển đến dashboard?</p>
-        <button class="btn-dashboard" id="btnDashboard">Vào Dashboard →</button>
-        <button class="btn-logout" id="btnLogout">Đăng xuất</button>
+        <p style="font-size:13.5px;color:var(--text-secondary);margin-bottom:28px;">ÄÄƒng nháº­p thÃ nh cÃ´ng. Chuyá»ƒn Ä‘áº¿n dashboard?</p>
+        <button class="btn-dashboard" id="btnDashboard">VÃ o Dashboard â†’</button>
+        <button class="btn-logout" id="btnLogout">ÄÄƒng xuáº¥t</button>
       </div>
 
     </div>
@@ -402,11 +599,11 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  // ── Config ──
+  // â”€â”€ Config â”€â”€
   const API_BASE = '';
-  const DASHBOARD_URL = 'dashboard.html'; // đường dẫn đến dashboard
+  const DASHBOARD_URL = 'dashboard.html'; // Ä‘Æ°á»ng dáº«n Ä‘áº¿n dashboard
 
-  // ── Elements ──
+  // â”€â”€ Elements â”€â”€
   const usernameEl = document.getElementById('username');
   const passwordEl = document.getElementById('password');
   const btnLogin   = document.getElementById('btnLogin');
@@ -415,22 +612,22 @@
   const loginForm  = document.getElementById('loginForm');
   const loggedCard = document.getElementById('loggedInCard');
 
-  // ── Show/hide password ──
+  // â”€â”€ Show/hide password â”€â”€
   const togglePass = document.getElementById('togglePass');
   const eyeIcon = document.getElementById('eyeIcon');
   togglePass.addEventListener('click', () => {
     const isPass = passwordEl.type === 'password';
     passwordEl.type = isPass ? 'text' : 'password';
     togglePass.setAttribute('aria-pressed', String(isPass));
-    togglePass.setAttribute('aria-label', isPass ? 'Ẩn mật khẩu' : 'Hiện mật khẩu');
-    togglePass.setAttribute('title', isPass ? 'Ẩn mật khẩu' : 'Hiện mật khẩu');
+    togglePass.setAttribute('aria-label', isPass ? 'áº¨n máº­t kháº©u' : 'Hiá»‡n máº­t kháº©u');
+    togglePass.setAttribute('title', isPass ? 'áº¨n máº­t kháº©u' : 'Hiá»‡n máº­t kháº©u');
     eyeIcon.innerHTML = isPass
       ? `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>`
       : `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
     passwordEl.focus();
   });
 
-  // ── Toast helper ──
+  // â”€â”€ Toast helper â”€â”€
   function showToast(msg, type = 'success') {
     const t = document.getElementById('toast');
     t.textContent = msg;
@@ -440,12 +637,12 @@
     setTimeout(() => t.classList.remove('show'), 3200);
   }
 
-  // ── Clear error on type ──
+  // â”€â”€ Clear error on type â”€â”€
   [usernameEl, passwordEl].forEach(el => {
     el.addEventListener('input', () => errorMsg.classList.remove('show'));
   });
 
-  // ── Check existing token on load ──
+  // â”€â”€ Check existing token on load â”€â”€
   window.addEventListener('DOMContentLoaded', async () => {
     const token = true;
     if (token) {
@@ -460,12 +657,12 @@
     }
   });
 
-  // ── Login ──
+  // â”€â”€ Login â”€â”€
   async function doLogin() {
     const username = usernameEl.value.trim();
     const password = passwordEl.value;
     if (!username || !password) {
-      errorText.textContent = 'Vui lòng nhập đủ tên đăng nhập và mật khẩu.';
+      errorText.textContent = 'Vui lÃ²ng nháº­p Ä‘á»§ tÃªn Ä‘Äƒng nháº­p vÃ  máº­t kháº©u.';
       errorMsg.classList.add('show');
       return;
     }
@@ -486,7 +683,7 @@
       const data = await res.json();
 
       if (!res.ok) {
-        errorText.textContent = data.detail || 'Đăng nhập thất bại.';
+        errorText.textContent = data.detail || 'ÄÄƒng nháº­p tháº¥t báº¡i.';
         errorMsg.classList.add('show');
         passwordEl.value = '';
         passwordEl.focus();
@@ -498,11 +695,11 @@
       JSON.stringify({
         username, role: data.role, display_name: data.display_name
       });
-      showToast(`Xin chào, ${data.display_name}!`);
+      showToast(`Xin chÃ o, ${data.display_name}!`);
       showLoggedIn({ username, role: data.role, display_name: data.display_name });
 
     } catch (err) {
-      errorText.textContent = 'Không kết nối được server. Kiểm tra backend đang chạy chưa?';
+      errorText.textContent = 'KhÃ´ng káº¿t ná»‘i Ä‘Æ°á»£c server. Kiá»ƒm tra backend Ä‘ang cháº¡y chÆ°a?';
       errorMsg.classList.add('show');
     } finally {
       btnLogin.disabled = false;
@@ -520,11 +717,11 @@
   }
 
   function roleLabel(role) {
-    const map = { admin: 'Quản trị viên', quanly: 'Quản lý trường', giamthi: 'Giám thị', bantru: 'Bán trú' };
+    const map = { admin: 'Quáº£n trá»‹ viÃªn', quanly: 'Quáº£n lÃ½ trÆ°á»ng', giamthi: 'GiÃ¡m thá»‹', bantru: 'BÃ¡n trÃº' };
     return map[role] || role;
   }
 
-  // ── Buttons ──
+  // â”€â”€ Buttons â”€â”€
   btnLogin.addEventListener('click', doLogin);
   document.addEventListener('keydown', e => {
     if (e.key === 'Enter' && loginForm.style.display !== 'none') doLogin();
@@ -541,7 +738,7 @@
     usernameEl.value = '';
     passwordEl.value = '';
     usernameEl.focus();
-    showToast('Đã đăng xuất', 'error');
+    showToast('ÄÃ£ Ä‘Äƒng xuáº¥t', 'error');
   });
 </script>
 </body>
