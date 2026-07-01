@@ -23,6 +23,8 @@ from app.parser import parse_excel
 
 BASE_DIR = Path(__file__).parent.parent
 OVERRIDE_PASSWORD = "FSCHP2026"
+def vn_now():
+    return (datetime.utcnow() + timedelta(hours=7)).strftime("%Y-%m-%d %H:%M:%S")
 
 app = FastAPI(title="FSCHP Nề nếp API")
 
@@ -50,7 +52,7 @@ app.add_middleware(
 
 @app.get("/")
 def root():
-    return {"message": "FSCHP Nề nếp API đang chạy"}
+    return FileResponse(BASE_DIR / "login.html")
 
 
 @app.get("/login.html")
@@ -290,8 +292,8 @@ def save_rows_to_db(
 
     cur.execute("""
         INSERT INTO upload_audit_logs
-        (file_id, file_name, folder, action, old_rows, new_rows, user, reason, required_password)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (file_id, file_name, folder, action, old_rows, new_rows, user, reason, required_password, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         file_id,
         file_name,
