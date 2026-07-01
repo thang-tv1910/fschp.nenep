@@ -437,7 +437,7 @@ body{background:#eef2f7}
 
 <script>
 const API = window.location.origin;
-const APP = {allRows:[], filteredRows:[], charts:{}, perms:null, user:null, violationStudents:[], currentTab:'overview', filesCache:null, auditCache:null};
+const APP = {allRows:[], filteredRows:[], charts:{}, perms:null, user:null, violationStudents:[], currentTab:'overview', filesCache:null, auditCache:null, viewCache:null};
 const FK = ['month','week','level','grade','className','category','issue'];
 const C = {orange:'#F36F21',blue:'#005BAC',green:'#5CB85C',red:'#dc2626',purple:'#7c5cfc',teal:'#0d9488',pink:'#db2777',amber:'#d97706',slate:'#64748b',sky:'#0284c7'};
 const COLORS = [C.orange,C.blue,C.green,C.red,C.purple,C.teal,C.pink,C.amber,C.slate,C.sky];
@@ -610,6 +610,7 @@ function applyFilters(){
     if(f.className&&r.className!==f.className)return false;if(f.category&&r.category!==f.category)return false;
     if(f.issue&&r.issue!==f.issue)return false;return true;
   });
+  buildViewCache();
   renderCurrentTab();
 }
 
