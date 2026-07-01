@@ -93,7 +93,12 @@ async def security_headers(request: Request, call_next):
         "img-src 'self' data:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self'; "
         "object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
     )
-    response.headers.setdefault("Cache-Control", "no-store" if request.url.path.startswith("/auth/") else "private")
+    no_store_paths = {"/", "/login.html", "/dashboard.html"}
+    if request.url.path.startswith("/auth/") or request.url.path in no_store_paths:
+        response.headers.setdefault("Cache-Control", "no-store, max-age=0, must-revalidate")
+        response.headers.setdefault("Pragma", "no-cache")
+    else:
+        response.headers.setdefault("Cache-Control", "private")
     return response
 
 
