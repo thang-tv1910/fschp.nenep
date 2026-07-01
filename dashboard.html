@@ -536,8 +536,8 @@ function switchTab(tid){
 
   el('filtersSection').style.display = (tid==='admin'||tid==='audit'||tid==='users'||tid==='settings')?'none':'';
 
-  // Chuyển tab chỉ render từ dữ liệu đã cache, không gọi API dư.
-  renderCurrentTab();
+  // Chuyển tab: chỉ render đúng tab đang xem, không tính lại toàn bộ dashboard.
+  renderTabOnly(tid);
 
   if(tid==='admin'){
     switchRecordSubtab('file', false);
@@ -547,6 +547,33 @@ function switchTab(tid){
   if(tid==='users') renderUsersTable();
 
   setTimeout(()=>Object.values(APP.charts).forEach(c=>{try{c.resize()}catch(e){}}),80);
+}
+
+function renderTabOnly(tid){
+  const filtered = APP.filteredRows && APP.filteredRows.length ? APP.filteredRows : APP.allRows;
+  if(!filtered || !filtered.length) return;
+
+  if(tid === 'overview'){
+    const ranking = buildRanking(filtered);
+    const issues = buildIssues(filtered);
+    const daily = buildDaily(filtered);
+    const categories = buildCategories(filtered);
+    renderCharts({ranking, issues, daily, categories});
+    return;
+  }
+
+  destroyCharts();
+
+  if(tid === 'ranking') renderRankingTable(buildRanking(filtered));
+  if(tid === 'analysis'){
+    renderIssuesTable(buildIssues(filtered));
+    renderWarningTab(filtered);
+  }
+  if(tid === 'trend') renderTrend('class');
+  if(tid === 'daily') renderDailyTable(buildDaily(filtered));
+  if(tid === 'detail') renderDetailTable(filtered.slice(0, 1000));
+  if(tid === 'admin') populateQuickClassOptions();
+  if(tid === 'users') renderUsersTable();
 }
 
 // ── FETCH DATA ──
@@ -616,7 +643,7 @@ function renderCurrentTab(){
   }
   if(tid==='trend') renderTrend('class');
   if(tid==='daily') renderDailyTable(daily);
-  if(tid==='detail') renderDetailTable(filtered.slice(0,3000));
+  if(tid==='detail') renderDetailTable(filtered.slice(0,1000));
   if(tid==='admin') populateQuickClassOptions();
   if(tid==='users') renderUsersTable();
 }
