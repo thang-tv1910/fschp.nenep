@@ -94,7 +94,8 @@ class PGCursor:
         if pragma_match:
             table = pragma_match.group(1)
             self._cur.execute(
-                "SELECT column_name AS name FROM information_schema.columns WHERE table_name = %s",
+                "SELECT column_name AS name FROM information_schema.columns "
+                "WHERE table_schema = 'public' AND table_name = %s",
                 (table,),
             )
             return self
