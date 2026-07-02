@@ -1,6 +1,7 @@
 import re
 import psycopg2
 import psycopg2.extras
+import psycopg2.pool
 from app.config import get_settings
 from app.security import hash_password
 
@@ -151,12 +152,30 @@ class PGConnection:
         self._conn.commit()
 
     def close(self):
-        self._conn.close()
+        try:
+            self._conn.rollback()  # reset any leftover open transaction before returning to the pool
+        except Exception:
+            pass
+        _get_pool().putconn(self._conn)
+
+
+_pool = None
+
+
+def _get_pool():
+    global _pool
+    if _pool is None:
+        settings = get_settings()
+        _pool = psycopg2.pool.ThreadedConnectionPool(
+            minconn=1,
+            maxconn=10,
+            dsn=settings.database_url,
+        )
+    return _pool
 
 
 def get_conn():
-    settings = get_settings()
-    raw_conn = psycopg2.connect(settings.database_url)
+    raw_conn = _get_pool().getconn()
     return PGConnection(raw_conn)
 
 
