@@ -267,6 +267,18 @@ def ensure_user_management_schema():
         conn.close()
 
 
+
+
+OFFICIAL_CLASS_RE = re.compile(r"^(6|7|8|9|10|11|12)A\d{1,2}$", re.IGNORECASE)
+
+def is_official_class_name(value: str) -> bool:
+    return bool(OFFICIAL_CLASS_RE.match((value or "").strip().upper().replace(" ", "")))
+
+def public_row(row):
+    data = dict(row)
+    data["is_official_class"] = is_official_class_name(data.get("class_name", ""))
+    return data
+
 def public_user(row):
     data = dict(row)
     data.pop("password", None)
@@ -677,7 +689,7 @@ def get_all_rows(current_user: dict = Depends(get_current_user)):
         """, (folder,)).fetchall()
 
     conn.close()
-    return {"rows": [dict(r) for r in rows], "total": len(rows)}
+    return {"rows": [public_row(r) for r in rows], "total": len(rows)}
 
 
 @app.get("/data/files")

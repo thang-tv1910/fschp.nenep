@@ -18,6 +18,66 @@ def normalize_text(text):
     return clean_value(text).lower()
 
 
+OFFICIAL_CLASS_RE = re.compile(r"^(6|7|8|9|10|11|12)A\d{1,2}$", re.IGNORECASE)
+
+def normalize_class_name(value):
+    """Chuẩn hóa tên lớp hành chính: 11a2 -> 11A2."""
+    text = clean_value(value).upper().replace(" ", "")
+    return text
+
+def is_official_class_name(value):
+    """Chỉ lớp hành chính được tính thi đua/ranking: 6A1..12Axx.
+    Các lớp đội tuyển/phụ đạo như ĐT ASMO, ĐT TOÁN... không phải lớp chính.
+    """
+    text = normalize_class_name(value)
+    return bool(OFFICIAL_CLASS_RE.match(text))
+
+def parse_date_from_value(value):
+    """Parse ngày từ cell Excel với nhiều định dạng thường gặp."""
+    if value is None or pd.isna(value):
+        return None
+    if isinstance(value, datetime):
+        return value
+    try:
+        parsed = pd.to_datetime(value, dayfirst=True, errors="coerce")
+        if pd.notna(parsed):
+            return parsed.to_pydatetime()
+    except Exception:
+        pass
+    text = clean_value(value)
+    patterns = [
+        r"(\d{1,2})[./\-](\d{1,2})[./\-](\d{4})",
+        r"(\d{4})[./\-](\d{1,2})[./\-](\d{1,2})",
+        r"(\d{1,2})[./\-](\d{1,2})",
+    ]
+    for idx, pattern in enumerate(patterns):
+        m = re.search(pattern, text)
+        if not m:
+            continue
+        try:
+            if idx == 0:
+                day, month, year = int(m.group(1)), int(m.group(2)), int(m.group(3))
+            elif idx == 1:
+                year, month, day = int(m.group(1)), int(m.group(2)), int(m.group(3))
+            else:
+                day, month, year = int(m.group(1)), int(m.group(2)), datetime.now().year
+            return datetime(year, month, day)
+        except Exception:
+            continue
+    return None
+
+def get_row_date(row, default_date):
+    """Lấy ngày từ các cột thường gặp; fallback về ngày mặc định."""
+    for col in ["Ngày", "Ngày vi phạm", "Ngày ghi nhận", "Ngày tháng", "Date", "Thời gian", "Timestamp"]:
+        try:
+            date_obj = parse_date_from_value(row.get(col))
+            if date_obj:
+                return date_obj
+        except Exception:
+            continue
+    return default_date
+
+
 def fuzzy_score(a, b):
     return SequenceMatcher(None, normalize_text(a), normalize_text(b)).ratio()
 
@@ -56,12 +116,19 @@ def get_point_from_rule(issue_text, is_violation=True):
 
 def parse_date_from_text(text):
     text = clean_value(text)
-    match = re.search(r"(\d{1,2})\.(\d{1,2})", text)
-    if match:
-        day = int(match.group(1))
-        month = int(match.group(2))
-        year = datetime.now().year
-        return datetime(year, month, day)
+    date_obj = parse_date_from_value(text)
+    if date_obj:
+        return date_obj
+
+    # File dạng "Lỗi tháng 11 - 2025" không có ngày cụ thể:
+    # fallback ngày đầu tháng để không rơi vào tháng hiện tại.
+    m = re.search(r"th[aá]ng\s*(\d{1,2}).*?(\d{4})", text, flags=re.IGNORECASE)
+    if m:
+        try:
+            return datetime(int(m.group(2)), int(m.group(1)), 1)
+        except Exception:
+            pass
+
     return datetime.now()
 
 
@@ -79,7 +146,7 @@ def build_row(
     is_violation=1,
     folder="giamthi"
 ):
-    class_name = clean_value(class_name)
+    class_name = normalize_class_name(class_name)
     student_name = clean_value(student_name)
     issue = clean_value(issue)
     note = clean_value(note)
@@ -106,6 +173,7 @@ def build_row(
         "level": level,
         "grade": grade,
         "class_name": class_name,
+        "class_is_official": is_official_class_name(class_name),
         "student_id": student_id,
         "student_name": student_name,
         "issue": issue,
@@ -143,9 +211,10 @@ def parse_loi_file(file_path, folder, filename):
                 continue
 
             point = get_point_from_rule(issue, is_violation=True)
+            row_date = get_row_date(row, date_obj)
 
             rows.append(build_row(
-                date_obj=date_obj,
+                date_obj=row_date,
                 class_name=class_name,
                 student_name=student,
                 issue=issue,
@@ -185,9 +254,10 @@ def parse_khen_file(file_path, folder, filename):
                 continue
 
             point = get_point_from_rule(issue, is_violation=False)
+            row_date = get_row_date(row, date_obj)
 
             rows.append(build_row(
-                date_obj=date_obj,
+                date_obj=row_date,
                 class_name=class_name,
                 student_name=student,
                 issue=issue,
@@ -223,9 +293,12 @@ def parse_fsp_file(file_path, folder, filename):
 
                 if not student or not issue:
                     continue
+                if not is_official_class_name(class_name):
+                    continue
+                row_date = get_row_date(row, date_obj)
 
                 rows.append(build_row(
-                    date_obj=date_obj,
+                    date_obj=row_date,
                     class_name=class_name,
                     student_name=student,
                     issue=issue,
@@ -252,13 +325,16 @@ def parse_fsp_file(file_path, folder, filename):
 
                 if not student:
                     continue
+                if not is_official_class_name(class_name):
+                    continue
+                row_date = get_row_date(row, date_obj)
 
                 if khong_phep and khong_phep not in ["0", "0.0"]:
                     issue = "Vắng không phép"
                     point = -5
 
                     rows.append(build_row(
-                        date_obj=date_obj,
+                        date_obj=row_date,
                         class_name=class_name,
                         student_name=student,
                         issue=issue,
