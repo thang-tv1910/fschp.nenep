@@ -30,7 +30,9 @@ class Settings:
             minimum=1,
         )
         self.override_password_hash = os.getenv("FSCHP_OVERRIDE_PASSWORD_HASH", "")
-        self.db_path = Path(os.getenv("FSCHP_DB_PATH", self._default_db_path()))
+        self.database_url = self._required("FSCHP_DATABASE_URL", min_length=10)
+        if not self.database_url.startswith(("postgres://", "postgresql://")):
+            raise RuntimeError("FSCHP_DATABASE_URL must be a postgres:// or postgresql:// connection string")
         self.frontend_dir = Path(os.getenv("FSCHP_FRONTEND_DIR", str(FRONTEND_DIR)))
         self.cors_origins = self._csv("FSCHP_CORS_ORIGINS", default=["http://localhost:8000"])
         self.cookie_name = os.getenv("FSCHP_COOKIE_NAME", "fschp_access_token")

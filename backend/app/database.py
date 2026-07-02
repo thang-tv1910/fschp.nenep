@@ -1,5 +1,6 @@
-import sqlite3
-from pathlib import Path
+import re
+import psycopg2
+import psycopg2.extras
 from app.config import get_settings
 from app.security import hash_password
 
@@ -59,14 +60,103 @@ POINT_RULES = [
 ]
 
 
-def db_path() -> Path:
-    return Path(get_settings().db_path)
+# ──────────────────────────────────────────────────────────────────────────
+# Compatibility shim: makes psycopg2 behave enough like sqlite3 that
+# main.py / auth.py (written for sqlite3) don't need to change at all.
+#   - translates "?" placeholders -> "%s"
+#   - translates datetime('now') -> NOW() (formatted to match sqlite's TEXT output)
+#   - translates PRAGMA table_info(x) -> information_schema query
+#   - conn.execute(...) / cur.execute(...) both return something chainable
+#     with .fetchone() / .fetchall() / .rowcount, like sqlite3 does
+#   - cur.lastrowid works by transparently adding "RETURNING id" to INSERTs
+#   - rows come back as dict-like objects, so row["col"] keeps working
+# ──────────────────────────────────────────────────────────────────────────
+
+_INSERT_RE = re.compile(r"^\s*INSERT\s+INTO\s+\w+", re.IGNORECASE)
+_DATETIME_NOW_RE = re.compile(r"datetime\(\s*'now'\s*\)", re.IGNORECASE)
+_PRAGMA_RE = re.compile(r"PRAGMA\s+table_info\((\w+)\)", re.IGNORECASE)
+
+
+def _translate(sql: str) -> str:
+    sql = _DATETIME_NOW_RE.sub("NOW()", sql)
+    sql = re.sub(r"\buser\b", '"user"', sql)  # "user" is a reserved word in Postgres
+    sql = sql.replace("?", "%s")
+    return sql
+
+
+class PGCursor:
+    def __init__(self, raw_cursor):
+        self._cur = raw_cursor
+        self.lastrowid = None
+
+    def execute(self, sql, params=None):
+        pragma_match = _PRAGMA_RE.search(sql)
+        if pragma_match:
+            table = pragma_match.group(1)
+            self._cur.execute(
+                "SELECT column_name AS name FROM information_schema.columns WHERE table_name = %s",
+                (table,),
+            )
+            return self
+
+        pg_sql = _translate(sql)
+
+        if _INSERT_RE.match(pg_sql) and "RETURNING" not in pg_sql.upper():
+            pg_sql = pg_sql.rstrip().rstrip(";") + " RETURNING id"
+            self._cur.execute(pg_sql, params or ())
+            try:
+                row = self._cur.fetchone()
+                self.lastrowid = row["id"] if row else None
+            except psycopg2.ProgrammingError:
+                self.lastrowid = None
+        else:
+            self._cur.execute(pg_sql, params or ())
+
+        return self
+
+    def executescript(self, sql):
+        self._cur.execute(sql)
+        return self
+
+    def executemany(self, sql, seq_of_params):
+        self._cur.executemany(_translate(sql), seq_of_params)
+        return self
+
+    def fetchone(self):
+        return self._cur.fetchone()
+
+    def fetchall(self):
+        return self._cur.fetchall()
+
+    @property
+    def rowcount(self):
+        return self._cur.rowcount
+
+
+class PGConnection:
+    def __init__(self, raw_conn):
+        self._conn = raw_conn
+
+    def cursor(self):
+        return PGCursor(self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor))
+
+    def execute(self, sql, params=None):
+        return self.cursor().execute(sql, params)
+
+    def executescript(self, sql):
+        return self.cursor().executescript(sql)
+
+    def commit(self):
+        self._conn.commit()
+
+    def close(self):
+        self._conn.close()
 
 
 def get_conn():
-    conn = sqlite3.connect(db_path())
-    conn.row_factory = sqlite3.Row
-    return conn
+    settings = get_settings()
+    raw_conn = psycopg2.connect(settings.database_url)
+    return PGConnection(raw_conn)
 
 
 def init_db():
@@ -76,18 +166,18 @@ def init_db():
 
     cur.executescript("""
         CREATE TABLE IF NOT EXISTS users (
-            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            id           SERIAL PRIMARY KEY,
             username     TEXT UNIQUE NOT NULL,
             password     TEXT NOT NULL,
             role         TEXT NOT NULL,
             display_name TEXT NOT NULL,
             folder       TEXT,
             is_active    INTEGER DEFAULT 1,
-            created_at   TEXT DEFAULT (datetime('now'))
+            created_at   TEXT DEFAULT (to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS'))
         );
 
         CREATE TABLE IF NOT EXISTS imported_files (
-            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            id           SERIAL PRIMARY KEY,
             file_name    TEXT NOT NULL,
             source_type  TEXT NOT NULL,
             source_url   TEXT,
@@ -95,11 +185,11 @@ def init_db():
             uploaded_by  TEXT NOT NULL,
             row_count    INTEGER DEFAULT 0,
             status       TEXT DEFAULT 'OK',
-            imported_at  TEXT DEFAULT (datetime('now'))
+            imported_at  TEXT DEFAULT (to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS'))
         );
 
         CREATE TABLE IF NOT EXISTS discipline_records (
-            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            id           SERIAL PRIMARY KEY,
             date         TEXT,
             date_label   TEXT,
             week         TEXT,
@@ -128,21 +218,21 @@ def init_db():
             rule_type   TEXT NOT NULL,
             note        TEXT,
             is_active   INTEGER DEFAULT 1,
-            created_at  TEXT DEFAULT (datetime('now'))
+            created_at  TEXT DEFAULT (to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS'))
         );
 
         CREATE TABLE IF NOT EXISTS upload_audit_logs (
-            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            id                SERIAL PRIMARY KEY,
             file_id           INTEGER,
             file_name         TEXT NOT NULL,
             folder            TEXT NOT NULL,
             action            TEXT NOT NULL,
             old_rows          INTEGER DEFAULT 0,
             new_rows          INTEGER DEFAULT 0,
-            user              TEXT NOT NULL,
+            "user"            TEXT NOT NULL,
             reason            TEXT,
             required_password INTEGER DEFAULT 0,
-            created_at        TEXT DEFAULT (datetime('now')),
+            created_at        TEXT DEFAULT (to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS')),
             FOREIGN KEY (file_id) REFERENCES imported_files(id)
         );
     """)
