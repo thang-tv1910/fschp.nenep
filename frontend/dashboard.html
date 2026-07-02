@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
@@ -995,6 +995,66 @@ tbody tr:hover {
   margin-left: 16px;
 }
 
+.file-select {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-right: 4px;
+}
+.file-select input,
+.file-select-all input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--fpt-orange);
+  cursor: pointer;
+}
+.file-item.selected {
+  border-color: rgba(243, 112, 33, 0.45);
+  background: linear-gradient(0deg, rgba(243, 112, 33, 0.045), rgba(243, 112, 33, 0.045)), #fff;
+}
+.file-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.file-select-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 700;
+  user-select: none;
+}
+.batch-action-bar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  margin: -4px 0 12px;
+  border: 1px solid rgba(243, 112, 33, 0.25);
+  border-radius: var(--radius-sm);
+  background: var(--fpt-orange-light);
+}
+.batch-action-bar.show {
+  display: flex;
+}
+.batch-action-info {
+  color: var(--text);
+  font-weight: 700;
+  font-size: 13px;
+}
+.batch-action-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
 .badge {
   display: inline-block;
   padding: 2px 6px;
@@ -1670,7 +1730,7 @@ tbody tr:hover {
 
   <div id="filtersSection">
     <div class="filters">
-      <div class="filter-group"><label>Tháng</label><select id="f_month" onchange="applyFilters()"></select></div>
+      <div class="filter-group"><label>Tháng</label><select id="f_month" onchange="buildFilterOptions(APP.allRows);applyFilters()"></select></div>
       <div class="filter-group"><label>Tuần</label><select id="f_week" onchange="applyFilters()"></select></div>
       <div class="filter-group"><label>Cấp học</label><select id="f_level" onchange="applyFilters()"></select></div>
       <div class="filter-group"><label>Khối</label><select id="f_grade" onchange="applyFilters()"></select></div>
@@ -1698,8 +1758,8 @@ tbody tr:hover {
   <section id="tab_ranking" class="tab-content"><div class="panel"><h3>Bảng xếp hạng lớp</h3><div class="table-wrap" id="tableRanking"></div></div></section>
   <section id="tab_analysis" class="tab-content">
     <div class="grid-2">
-      <div class="panel"><h3>Tỷ lệ lỗi & điểm trừ</h3><div class="table-wrap" id="tableIssues"></div></div>
-      <div class="panel"><h3><i class="ti ti-list-details"></i> Top lỗi thường gặp</h3><div class="table-wrap" id="tableTopErrors"></div></div>
+      <div class="panel"><h3>Cơ cấu điểm trừ theo lỗi</h3><div class="table-wrap" id="tableIssues"></div></div>
+      <div class="panel"><h3><i class="ti ti-list-details"></i> Lỗi lan rộng nhất</h3><div class="table-wrap" id="tableTopErrors"></div></div>
     </div>
     <div class="panel" style="margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -1765,11 +1825,27 @@ tbody tr:hover {
       <div id="recordFile" class="record-subtab">
         <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
           <div style="font-size:32px;margin-bottom:8px;color:var(--fpt-orange)"><i class="ti ti-cloud-upload"></i></div>
-          <div style="font-size:14px;font-weight:600;margin-bottom:4px">Kéo thả file Excel vào đây hoặc click để chọn</div>
-          <div style="font-size:12px;color:var(--text-muted)">Hỗ trợ .xlsx, .xls</div>
-          <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" onchange="handleUpload(this.files[0])">
+          <div style="font-size:14px;font-weight:600;margin-bottom:4px">Kéo thả nhiều file Excel vào đây hoặc click để chọn</div>
+          <div style="font-size:12px;color:var(--text-muted)">Hỗ trợ chọn nhiều file .xlsx, .xls cùng lúc</div>
+          <input type="file" id="fileInput" accept=".xlsx,.xls" multiple style="display:none" onchange="handleUploadFiles(this.files); this.value='';">
         </div>
-        <div class="admin-header"><h3>File đã import</h3><span style="font-size:12px;color:var(--text-muted)" id="adminStatus"></span></div>
+        <div class="admin-header">
+          <h3>File đã import</h3>
+          <div class="file-header-actions">
+            <label class="file-select-all" id="fileSelectAllWrap" style="display:none">
+              <input type="checkbox" id="fileSelectAll" onchange="toggleSelectAllFiles(this.checked)">
+              <span>Chọn tất cả</span>
+            </label>
+            <span style="font-size:12px;color:var(--text-muted)" id="adminStatus"></span>
+          </div>
+        </div>
+        <div class="batch-action-bar" id="fileBatchBar">
+          <div class="batch-action-info" id="fileBatchInfo">Đã chọn 0 file</div>
+          <div class="batch-action-actions">
+            <button class="btn btn-secondary btn-sm" onclick="clearFileSelection()">Bỏ chọn</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteSelectedFiles()"><i class="ti ti-trash"></i>Xóa file đã chọn</button>
+          </div>
+        </div>
         <div class="file-list" id="fileList"><div class="empty-state"><div class="icon"><i class="ti ti-folder-open"></i></div><p>Chưa có file nào</p></div></div>
       </div>
     </div>
@@ -1821,10 +1897,29 @@ tbody tr:hover {
 
 <script>
 const API = '';
-const APP = {allRows:[], charts:{}, perms:null, user:null, violationStudents:[], users:[]};
+const APP = {allRows:[], charts:{}, perms:null, user:null, violationStudents:[], users:[], importedFiles:[], selectedFileIds:new Set()};
 const FK = ['month','week','level','grade','className','category','issue'];
 const C = {orange:'#F36F21',blue:'#005BAC',green:'#5CB85C',red:'#dc2626',purple:'#7c5cfc',teal:'#0d9488',pink:'#db2777',amber:'#d97706',slate:'#64748b',sky:'#0284c7'};
 const COLORS = [C.orange,C.blue,C.green,C.red,C.purple,C.teal,C.pink,C.amber,C.slate,C.sky];
+
+const OFFICIAL_CLASS_RE = /^(6|7|8|9|10|11|12)A\d{1,2}$/i;
+function normalizeClassName(v){return String(v||'').trim().toUpperCase().replace(/\s+/g,'')}
+function isOfficialClassName(v){return OFFICIAL_CLASS_RE.test(normalizeClassName(v))}
+function isOfficialClassRow(r){return r && (r.is_official_class === true || isOfficialClassName(r.className))}
+function weekNum(w){return parseInt(String(w||'').replace(/\D/g,''),10)||0}
+function monthKeyToDate(m){
+  const parts = String(m||'').split('/');
+  if(parts.length!==2) return null;
+  const mm = parseInt(parts[0],10), yy = parseInt(parts[1],10);
+  if(!mm || !yy) return null;
+  return new Date(yy, mm-1, 1);
+}
+function monthSort(a,b){
+  const da=monthKeyToDate(a), db=monthKeyToDate(b);
+  if(da&&db) return da-db;
+  return String(a).localeCompare(String(b),'vi');
+}
+
 const TAB_ICONS = {overview:'layout-dashboard',detail:'database',admin:'clipboard-plus',audit:'history',ranking:'trophy',analysis:'alert-triangle',users:'users',settings:'settings'};
 const ICON_PATHS = {
   circle:'<circle cx="12" cy="12" r="8"/>',
@@ -1999,7 +2094,7 @@ async function fetchData(){
     const data = await res.json();
     APP.allRows = (data.rows||[]).map(r=>({
       ...r,
-      className: r.class_name||'',
+      className: normalizeClassName(r.class_name||''),
       studentId: r.student_id||'',
       studentName: r.student_name||'',
       dateLabel: r.date_label||'',
@@ -2024,8 +2119,13 @@ function applyFilters(){
     if(f.className&&r.className!==f.className)return false;if(f.category&&r.category!==f.category)return false;
     if(f.issue&&r.issue!==f.issue)return false;return true;
   });
-  const ranking=buildRanking(filtered),issues=buildIssues(filtered),daily=buildDaily(filtered),categories=buildCategories(filtered);
-  const summary=buildSummary(filtered,ranking);
+
+  // Chỉ lớp hành chính chính thức được tính ranking/KPI lớp/cảnh báo lớp.
+  // Các lớp đội tuyển/phụ đạo như ĐT ASMO, ĐT TOÁN... vẫn giữ ở dữ liệu chi tiết.
+  const officialFiltered = filtered.filter(isOfficialClassRow);
+
+  const ranking=buildRanking(officialFiltered),issues=buildIssues(filtered),daily=buildDaily(filtered),categories=buildCategories(filtered);
+  const summary=buildSummary(filtered,ranking,officialFiltered);
   renderHealthScore(filtered,summary);renderKPIs(summary);
   renderRankingTable(ranking);renderIssuesTable(issues);renderDailyTable(daily);
 
@@ -2033,19 +2133,24 @@ function applyFilters(){
   APP.filteredDetailRows = filtered;
   renderDetailTablePage(1);
 
-  renderWarningTab(filtered);renderTrend('class');
+  renderWarningTab(officialFiltered);renderTrend('class');
   renderCharts({ranking,issues,daily,categories});
 }
-function resetFilters(){FK.forEach(k=>{el('f_'+k).value=''});applyFilters()}
+function resetFilters(){FK.forEach(k=>{el('f_'+k).value=''});buildFilterOptions(APP.allRows);applyFilters()}
 
 // ── AGGREGATION ──
-function buildSummary(rows,ranking){
+function buildSummary(rows,ranking,officialRows){
   const stu=new Set(),cls=new Set();let plus=0,minus=0,score=0,violations=0;
-  rows.forEach(r=>{if(r.studentId||r.studentName)stu.add((r.studentId||'')+'|'+(r.studentName||''));
-    if(r.className)cls.add(r.className);const p=+r.point||0;score+=p;if(p>0)plus+=p;if(p<0)minus+=Math.abs(p);if(r.isViolation)violations++});
+  const classRows = officialRows || rows.filter(isOfficialClassRow);
+  rows.forEach(r=>{
+    if(r.studentId||r.studentName)stu.add((r.studentId||'')+'|'+(r.studentName||''));
+    const p=+r.point||0;score+=p;if(p>0)plus+=p;if(p<0)minus+=Math.abs(p);if(r.isViolation)violations++;
+  });
+  classRows.forEach(r=>{if(r.className)cls.add(r.className)});
   return{totalScore:rd(score),totalPlus:rd(plus),totalMinus:rd(minus),totalViolations:violations,totalStudents:stu.size,totalClasses:cls.size,bestClass:ranking.length?ranking[0].className:'—',warningClass:ranking.length?ranking[ranking.length-1].className:'—'}
 }
 function buildRanking(rows){
+  rows = rows.filter(isOfficialClassRow);
   const m={};rows.forEach(r=>{const k=r.className||'?';if(!m[k])m[k]={className:k,level:r.level||'',grade:r.grade||'',score:0,plus:0,minus:0,issueCount:0,students:new Set()};
     const p=+r.point||0;m[k].score+=p;if(p>0)m[k].plus+=p;if(p<0)m[k].minus+=Math.abs(p);if(r.isViolation)m[k].issueCount++;if(r.studentId||r.studentName)m[k].students.add((r.studentId||'')+'|'+(r.studentName||''))});
   return Object.values(m).map(x=>({className:x.className,level:x.level,grade:x.grade,score:rd(x.score),plus:rd(x.plus),minus:rd(x.minus),issueCount:x.issueCount,studentCount:x.students.size})).sort((a,b)=>b.score-a.score||a.issueCount-b.issueCount).map((x,i)=>Object.assign({rank:i+1},x))
@@ -2054,19 +2159,43 @@ function buildIssues(rows){const m={};rows.forEach(r=>{const k=r.issue||'?';if(!
 function buildDaily(rows){const m={};rows.forEach(r=>{const k=r.date||'?';if(!m[k])m[k]={date:r.dateLabel||'?',sortKey:k,score:0,plus:0,minus:0,count:0};const p=+r.point||0;m[k].score+=p;if(p>0)m[k].plus+=p;if(p<0)m[k].minus+=Math.abs(p);if(r.isViolation)m[k].count++});return Object.values(m).sort((a,b)=>String(a.sortKey).localeCompare(String(b.sortKey))).map(x=>({date:x.date,score:rd(x.score),plus:rd(x.plus),minus:rd(x.minus),count:x.count}))}
 function buildCategories(rows){const m={};rows.forEach(r=>{const k=r.category||'?';if(!m[k])m[k]={category:k,count:0,minus:0};m[k].count++;if((+r.point||0)<0)m[k].minus+=Math.abs(+r.point||0)});return Object.values(m).sort((a,b)=>b.count-a.count).map(x=>({category:x.category,count:x.count,minus:rd(x.minus)}))}
 function buildFilterOptions(rows){
-  const opts={};FK.forEach(k=>{const key=k==='className'?'className':k;const v=[...new Set(rows.map(r=>String(r[key]||'')).filter(Boolean))];opts[k]=k==='grade'?v.sort((a,b)=>+a-+b):v.sort((a,b)=>a.localeCompare(b,'vi'))});
+  const selectedMonth = el('f_month')?.value || '';
+  const selectedWeek = el('f_week')?.value || '';
+  const sourceForWeeks = selectedMonth ? rows.filter(r=>r.month===selectedMonth) : rows;
+  const opts={};
+  FK.forEach(k=>{
+    const key=k==='className'?'className':k;
+    let source = k==='week' ? sourceForWeeks : rows;
+    let values = [...new Set(source.map(r=>String(r[key]||'')).filter(Boolean))];
+    if(k==='className') values = values.filter(isOfficialClassName);
+    opts[k]=k==='grade'
+      ? values.sort((a,b)=>(+a||99)-(+b||99))
+      : k==='week'
+        ? values.sort((a,b)=>weekNum(a)-weekNum(b))
+        : k==='month'
+          ? values.sort(monthSort)
+          : values.sort((a,b)=>a.localeCompare(b,'vi'));
+  });
   const L={month:'Tất cả tháng',week:'Tất cả tuần',level:'Tất cả cấp',grade:'Tất cả khối',className:'Tất cả lớp',category:'Tất cả phân loại',issue:'Tất cả lỗi'};
-  FK.forEach(k=>{const s=el('f_'+k);const c=s.value||'';s.innerHTML='<option value="">'+L[k]+'</option>'+(opts[k]||[]).map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');s.value=c})
+  FK.forEach(k=>{
+    const s=el('f_'+k);
+    const current = k==='week' ? selectedWeek : (s.value||'');
+    s.innerHTML='<option value="">'+L[k]+'</option>'+(opts[k]||[]).map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
+    s.value=(opts[k]||[]).includes(current)?current:'';
+  })
 }
 
 // ── RENDER ──
 function renderHealthScore(rows, summary){
-  const totalScore = summary.totalScore || 0;
+  const totalStudents = Math.max(summary.totalStudents || 0, 1);
+  const minusPerStudent = (summary.totalMinus || 0) / totalStudents;
+  const plusPerStudent = (summary.totalPlus || 0) / totalStudents;
+  const violationRate = (summary.totalViolations || 0) / totalStudents;
 
-  const score = Math.max(
-    0,
-    Math.min(100, Math.round(100 - (Math.abs(totalScore) / 10)))
-  );
+  // Công thức mới: chuẩn hóa theo quy mô dữ liệu, tránh tháng nhiều dữ liệu tự động về 0.
+  // Điểm trừ/HS và tần suất vi phạm/HS là trọng số chính; điểm cộng bù nhẹ.
+  const rawScore = 100 - (minusPerStudent * 1.8) - (violationRate * 8) + (plusPerStudent * 0.35);
+  const score = Math.max(0, Math.min(100, Math.round(rawScore)));
 
   const color = score >= 80 ? C.green : score >= 60 ? C.orange : C.red;
   const verdict = score >= 80 ? 'Tốt' : score >= 60 ? 'Cần cải thiện' : 'Cảnh báo';
@@ -2080,7 +2209,7 @@ function renderHealthScore(rows, summary){
     '<circle cx="60" cy="60" r="48" fill="none" stroke="#e5e7eb" stroke-width="10"/>' +
     '<circle cx="60" cy="60" r="48" fill="none" stroke="' + color + '" stroke-width="10" stroke-linecap="round" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + offset + '" style="transition:stroke-dashoffset .8s ease"/>' +
     '</svg>' +
-    '<div class="health-score-text" style="color:' + color + '">' + score + '</div>';
+    '<div class="health-score-text" style="color:' + color + '" title="Trừ/HS: ' + minusPerStudent.toFixed(1) + ' | Vi phạm/HS: ' + violationRate.toFixed(2) + '">' + score + '</div>';
 
   el('healthVerdict').textContent = verdict;
   el('healthVerdict').style.background = vColor;
@@ -2152,6 +2281,7 @@ function mkTable(id,hd,rows){el(id).innerHTML=!rows.length?'<div class="empty-st
 
 // ── WARNING TAB ──
 function renderWarningTab(rows){
+  rows = rows.filter(isOfficialClassRow);
   const vio=rows.filter(r=>r.isViolation||(+r.point||0)<0);
   const sm={};vio.forEach(r=>{const k=(r.studentName||'?')+'|'+(r.className||'');if(!sm[k])sm[k]={n:r.studentName||'?',c:r.className||'?',g:r.grade||'',cnt:0,m:0,iss:new Set()};sm[k].cnt++;sm[k].m+=Math.abs(+r.point||0);if(r.issue)sm[k].iss.add(r.issue)});
   const ts=Object.values(sm).filter(s=>s.n!=='?').sort((a,b)=>b.cnt-a.cnt||b.m-a.m).slice(0,50);
@@ -2161,8 +2291,9 @@ function renderWarningTab(rows){
   const tc=Object.values(cm).sort((a,b)=>b.cnt-a.cnt).slice(0,15);
   mkTable('tableTopClasses',['#','Lớp','Cấp','Khối','VP','Trừ','HS'],tc.map((c,i)=>[i+1,'<strong>'+esc(c.c)+'</strong>',esc(c.l),esc(c.g),'<span class="text-red">'+c.cnt+'</span>','<span class="text-red">'+fmtN(rd(c.m))+'</span>',c.stu.size]));
   const em={};vio.forEach(r=>{const k=r.issue||'?';if(!em[k])em[k]={i:k,cat:r.category||'',cnt:0,m:0,cls:new Set(),stu:new Set()};em[k].cnt++;em[k].m+=Math.abs(+r.point||0);if(r.className)em[k].cls.add(r.className);if(r.studentName)em[k].stu.add(r.studentName)});
-  const te=Object.values(em).sort((a,b)=>b.cnt-a.cnt).slice(0,15);const tv=vio.length||1;
-  mkTable('tableTopErrors',['#','Lỗi','Loại','Lượt','%','Trừ','Lớp','HS'],te.map((e,i)=>[i+1,esc(e.i),'<span class="pill">'+esc(e.cat)+'</span>','<strong>'+e.cnt+'</strong>',(e.cnt/tv*100).toFixed(1)+'%','<span class="text-red">'+fmtN(rd(e.m))+'</span>',e.cls.size,e.stu.size]))
+  const te=Object.values(em).map(e=>({...e,spread:e.cls.size*2+e.stu.size})).sort((a,b)=>b.spread-a.spread||b.cnt-a.cnt||b.m-a.m).slice(0,15);
+  const totalStudents=[...new Set(vio.map(r=>(r.studentId||'')+'|'+(r.studentName||'')).filter(Boolean))].length||1;
+  mkTable('tableTopErrors',['#','Lỗi','Loại','Lớp ảnh hưởng','HS ảnh hưởng','Tỷ lệ HS','Lượt','Trừ'],te.map((e,i)=>[i+1,esc(e.i),'<span class="pill">'+esc(e.cat)+'</span>','<strong>'+e.cls.size+'</strong>','<strong>'+e.stu.size+'</strong>',(e.stu.size/totalStudents*100).toFixed(1)+'%',e.cnt,'<span class="text-red">'+fmtN(rd(e.m))+'</span>']))
 }
 
 // ── TREND TAB ──
@@ -2170,7 +2301,7 @@ function renderTrend(mode){
   el('btnTrendClass').style.background=mode==='class'?'var(--fpt-orange)':'';el('btnTrendClass').style.color=mode==='class'?'#fff':'';
   el('btnTrendGrade').style.background=mode==='grade'?'var(--fpt-orange)':'';el('btnTrendGrade').style.color=mode==='grade'?'#fff':'';
   const f={};FK.forEach(k=>{f[k]=el('f_'+k).value||''});
-  const rows=APP.allRows.filter(r=>{if(f.month&&r.month!==f.month)return false;if(f.level&&r.level!==f.level)return false;if(f.grade&&mode==='class'&&String(r.grade)!==String(f.grade))return false;if(f.className&&r.className!==f.className)return false;return true});
+  const rows=APP.allRows.filter(r=>isOfficialClassRow(r)).filter(r=>{if(f.month&&r.month!==f.month)return false;if(f.level&&r.level!==f.level)return false;if(f.grade&&mode==='class'&&String(r.grade)!==String(f.grade))return false;if(f.className&&r.className!==f.className)return false;return true});
   const vio=rows.filter(r=>r.isViolation||(+r.point||0)<0);
   const ws=new Set();vio.forEach(r=>{if(r.week)ws.add(r.week)});
   const weeks=[...ws].sort((a,b)=>(parseInt(a.replace(/\D/g,''))||0)-(parseInt(b.replace(/\D/g,''))||0));
@@ -2192,9 +2323,65 @@ function initDragDrop(){
   const zone=el('uploadZone'); if(!zone)return;
   zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('dragover')});
   zone.addEventListener('dragleave',()=>zone.classList.remove('dragover'));
-  zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('dragover');if(e.dataTransfer.files.length)handleUpload(e.dataTransfer.files[0])});
+  zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('dragover');if(e.dataTransfer.files.length)handleUploadFiles(e.dataTransfer.files)});
 }
-async function handleUpload(file){
+function normalizeUploadFileList(fileList){
+  const files = Array.from(fileList || []);
+  const valid = [];
+  const invalid = [];
+  files.forEach(file => {
+    if(file && file.name && file.name.match(/\.(xlsx|xls)$/i)) valid.push(file);
+    else if(file && file.name) invalid.push(file.name);
+  });
+  return {valid, invalid};
+}
+async function handleUploadFiles(fileList){
+  const {valid, invalid} = normalizeUploadFileList(fileList);
+  if(invalid.length){
+    showAlert('info','Đã bỏ qua ' + invalid.length + ' file không phải Excel: ' + invalid.map(esc).join(', '));
+  }
+  if(!valid.length){
+    showAlert('error','Chưa có file Excel hợp lệ. Chỉ hỗ trợ .xlsx hoặc .xls');
+    return;
+  }
+  if(valid.length === 1){
+    await handleUpload(valid[0]);
+    return;
+  }
+
+  const proceed = await showModal({
+    title: 'Upload nhiều file',
+    icon: 'upload',
+    body: 'Bạn đang chọn <strong>' + valid.length + '</strong> file Excel.<br>Hệ thống sẽ upload lần lượt từng file, tự kiểm tra file trùng và hỏi xác nhận ghi đè nếu cần.',
+    confirmText: 'Bắt đầu upload',
+    cancelText: 'Hủy'
+  });
+  if(!proceed){
+    showAlert('info','Đã huỷ upload nhiều file');
+    return;
+  }
+
+  const results = [];
+  for(let i=0;i<valid.length;i++){
+    const file = valid[i];
+    const result = await handleUpload(file, {batch:true, index:i+1, total:valid.length});
+    results.push(result || {ok:false, file:file.name, message:'Không rõ kết quả'});
+  }
+
+  hideLoading();
+  await loadFiles();
+  await fetchData();
+
+  const ok = results.filter(r=>r.ok).length;
+  const fail = results.length - ok;
+  if(fail){
+    const failNames = results.filter(r=>!r.ok).map(r=>esc(r.file || '')).join(', ');
+    showAlert('error','Upload xong: <strong>' + ok + '</strong> thành công, <strong>' + fail + '</strong> lỗi/huỷ. File lỗi: ' + failNames);
+  }else{
+    showAlert('success','Upload thành công <strong>' + ok + '</strong> file Excel. Dữ liệu dashboard đã được cập nhật.');
+  }
+}
+async function handleUpload(file, opts={}){
   if(!file) return;
 
   if(!file.name.match(/\.(xlsx|xls)$/i)){
@@ -2222,8 +2409,9 @@ async function handleUpload(file){
       });
 
       if(!confirmReplace){
+        if(opts.batch) return {ok:false, file:file.name, message:'Người dùng huỷ ghi đè'};
         showAlert('info','Đã huỷ upload');
-        return;
+        return {ok:false, file:file.name, message:'Người dùng huỷ ghi đè'};
       }
 
       overwrite = true;
@@ -2240,8 +2428,9 @@ async function handleUpload(file){
         });
 
         if(!reason || !reason.trim()){
+          if(opts.batch) return {ok:false, file:file.name, message:'Thiếu lý do ghi đè'};
           showAlert('error','Bắt buộc nhập lý do');
-          return;
+          return {ok:false, file:file.name, message:'Thiếu lý do ghi đè'};
         }
 
         overridePassword = await showModal({
@@ -2256,17 +2445,20 @@ async function handleUpload(file){
         });
 
         if(!overridePassword){
+          if(opts.batch) return {ok:false, file:file.name, message:'Thiếu mật khẩu xác nhận'};
           showAlert('error','Thiếu mật khẩu');
-          return;
+          return {ok:false, file:file.name, message:'Thiếu mật khẩu xác nhận'};
         }
       }
     }
   }catch(e){
+    if(opts.batch) return {ok:false, file:file.name, message:'Không kiểm tra được file trùng: ' + e.message};
     showAlert('error','Không kiểm tra được file trùng: ' + e.message);
-    return;
+    return {ok:false, file:file.name, message:e.message};
   }
 
-  showLoading((overwrite ? 'Đang ghi đè ' : 'Đang upload ') + file.name + '...');
+  const batchPrefix = opts.batch ? ('File ' + opts.index + '/' + opts.total + ': ') : '';
+  showLoading(batchPrefix + (overwrite ? 'Đang ghi đè ' : 'Đang upload ') + file.name + '...');
 
   try{
     const fd = new FormData();
@@ -2288,20 +2480,25 @@ async function handleUpload(file){
       throw new Error(msg);
     }
 
-    hideLoading();
-
-    if(data.replaced){
-      showAlert('success','Đã ghi đè file cũ: <strong>' + esc(data.file) + '</strong>');
-    }else{
-      showAlert('success','Upload thành công: <strong>' + data.rows + '</strong> dòng từ ' + esc(data.file));
+    if(!opts.batch){
+      hideLoading();
+      if(data.replaced){
+        showAlert('success','Đã ghi đè file cũ: <strong>' + esc(data.file) + '</strong>');
+      }else{
+        showAlert('success','Upload thành công: <strong>' + data.rows + '</strong> dòng từ ' + esc(data.file));
+      }
+      loadFiles();
+      fetchData();
     }
 
-    loadFiles();
-    fetchData();
+    return {ok:true, file:data.file || file.name, rows:data.rows || 0, replaced:!!data.replaced};
 
   }catch(e){
     hideLoading();
-    showAlert('error', e.message);
+    if(!opts.batch){
+      showAlert('error', e.message);
+    }
+    return {ok:false, file:file.name, message:e.message};
   }
 }
 async function loadFiles(){
@@ -2318,26 +2515,143 @@ async function loadFiles(){
     const res=await authFetch('/data/files');
     const data=await res.json();
     const files=data.files||[];
+    APP.importedFiles = files;
+    const canDel=APP.perms?.can_delete_files === true;
+    const validIds = new Set(files.map(f=>String(f.id)));
+    APP.selectedFileIds = new Set([...(APP.selectedFileIds||new Set())].filter(id=>validIds.has(String(id))));
     if(el('adminStatus')) el('adminStatus').textContent=files.length+' file · '+files.reduce((s,f)=>s+(f.row_count||0),0)+' dòng';
-    if(!files.length){el('fileList').innerHTML='<div class="empty-state"><div class="icon"><i class="ti ti-folder-open"></i></div><p>Chưa có file</p></div>';return}
+    if(el('fileSelectAllWrap')) el('fileSelectAllWrap').style.display = canDel && files.length ? 'inline-flex' : 'none';
+    if(!files.length){
+      if(el('fileSelectAll')) el('fileSelectAll').checked=false;
+      updateFileBatchBar();
+      el('fileList').innerHTML='<div class="empty-state"><div class="icon"><i class="ti ti-folder-open"></i></div><p>Chưa có file</p></div>';
+      return
+    }
     el('fileList').innerHTML=files.map(f=>{
       const badge=f.status==='OK'?'<span class="badge badge-ok">OK</span>':'<span class="badge badge-err">'+esc(f.status)+'</span>';
       const dt=f.imported_at?new Date(f.imported_at).toLocaleString('vi-VN'):'';
-      const canDel=APP.perms?.can_delete_files === true;
-      return'<div class="file-item"><div class="file-info"><div class="file-name">'+esc(f.file_name)+' '+badge+'</div><div class="file-meta">'+dt+' · '+fmtN(f.row_count)+' dòng · '+esc(f.folder)+'</div></div>'+(canDel?'<div class="file-actions"><button class="btn btn-danger btn-sm" onclick="deleteFile('+f.id+',\''+esc(f.file_name)+'\')" title="Xóa file"><i class="ti ti-trash"></i></button></div>':'')+'</div>'
+      const selected = APP.selectedFileIds?.has(String(f.id));
+      const checkbox = canDel ? '<label class="file-select"><input type="checkbox" class="file-checkbox" data-file-id="'+esc(f.id)+'" '+(selected?'checked':'')+' onchange="toggleFileSelection('+f.id+', this.checked)"></label>' : '';
+      const actions = canDel ? '<div class="file-actions"><button class="btn btn-danger btn-sm" onclick="deleteFile('+f.id+',\''+esc(f.file_name)+'\')" title="Xóa file"><i class="ti ti-trash"></i></button></div>' : '';
+      return '<div class="file-item '+(selected?'selected':'')+'" data-file-id="'+esc(f.id)+'">'+checkbox+'<div class="file-info"><div class="file-name">'+esc(f.file_name)+' '+badge+'</div><div class="file-meta">'+dt+' · '+fmtN(f.row_count)+' dòng · '+esc(f.folder)+'</div></div>'+actions+'</div>'
     }).join('');
+    updateFileBatchBar();
   }catch(e){showAlert('error',e.message)}
 }
+function toggleFileSelection(id, checked){
+  if(!APP.selectedFileIds) APP.selectedFileIds = new Set();
+  const key = String(id);
+  if(checked) APP.selectedFileIds.add(key);
+  else APP.selectedFileIds.delete(key);
+  const row = document.querySelector('.file-item[data-file-id="'+CSS.escape(key)+'"]');
+  if(row) row.classList.toggle('selected', checked);
+  updateFileBatchBar();
+}
+function toggleSelectAllFiles(checked){
+  if(!APP.selectedFileIds) APP.selectedFileIds = new Set();
+  const files = APP.importedFiles || [];
+  if(checked) files.forEach(f=>APP.selectedFileIds.add(String(f.id)));
+  else APP.selectedFileIds.clear();
+  document.querySelectorAll('.file-checkbox').forEach(cb=>{
+    cb.checked = checked;
+    const row = cb.closest('.file-item');
+    if(row) row.classList.toggle('selected', checked);
+  });
+  updateFileBatchBar();
+}
+function clearFileSelection(){
+  if(!APP.selectedFileIds) APP.selectedFileIds = new Set();
+  APP.selectedFileIds.clear();
+  document.querySelectorAll('.file-checkbox').forEach(cb=>cb.checked=false);
+  document.querySelectorAll('.file-item.selected').forEach(row=>row.classList.remove('selected'));
+  updateFileBatchBar();
+}
+function updateFileBatchBar(){
+  const canDel=APP.perms?.can_delete_files === true;
+  const files = APP.importedFiles || [];
+  const selected = APP.selectedFileIds || new Set();
+  const selectedCount = selected.size;
+  const bar = el('fileBatchBar');
+  const info = el('fileBatchInfo');
+  const selectAll = el('fileSelectAll');
+  const wrap = el('fileSelectAllWrap');
+
+  if(wrap) wrap.style.display = canDel && files.length ? 'inline-flex' : 'none';
+  if(info) info.textContent = 'Đã chọn ' + selectedCount + ' file';
+  if(bar) bar.classList.toggle('show', canDel && selectedCount > 0);
+
+  if(selectAll){
+    selectAll.checked = files.length > 0 && selectedCount === files.length;
+    selectAll.indeterminate = selectedCount > 0 && selectedCount < files.length;
+  }
+  replaceIconFonts(document);
+}
 async function deleteFile(id,name){
-  if(!confirm('Xóa dữ liệu file: '+name+'?'))return;
+  const ok = await showModal({
+    title:'Xóa file dữ liệu',
+    icon:'trash',
+    body:'Bạn sắp xóa file <strong>'+esc(name)+'</strong> và toàn bộ dữ liệu liên quan. Thao tác này không thể hoàn tác.',
+    confirmText:'Xóa file',
+    cancelText:'Hủy'
+  });
+  if(!ok)return;
   showLoading('Đang xóa…');
   try{
     const res=await authFetch('/data/files/'+id,{method:'DELETE'});
     const data=await res.json();
     if(!res.ok) throw new Error(data.detail||'Xóa thất bại');
+    if(APP.selectedFileIds) APP.selectedFileIds.delete(String(id));
     hideLoading();showAlert('success','Đã xóa <strong>'+data.deleted_rows+'</strong> dòng');
     loadFiles();fetchData();
   }catch(e){hideLoading();showAlert('error',e.message)}
+}
+async function deleteSelectedFiles(){
+  const ids = [...(APP.selectedFileIds || new Set())];
+  if(!ids.length) return;
+  const fileMap = new Map((APP.importedFiles||[]).map(f=>[String(f.id), f]));
+  const selectedFiles = ids.map(id=>fileMap.get(String(id))).filter(Boolean);
+  const totalRows = selectedFiles.reduce((s,f)=>s+(+f.row_count||0),0);
+  const sampleNames = selectedFiles.slice(0,5).map(f=>'<li>'+esc(f.file_name)+'</li>').join('');
+  const more = selectedFiles.length > 5 ? '<li>… và '+(selectedFiles.length-5)+' file khác</li>' : '';
+  const ok = await showModal({
+    title:'Xóa nhiều file',
+    icon:'trash',
+    body:'Bạn sắp xóa <strong>'+selectedFiles.length+'</strong> file với khoảng <strong>'+fmtN(totalRows)+'</strong> dòng dữ liệu liên quan.<br><br><ul style="padding-left:18px;margin:0">'+sampleNames+more+'</ul><br>Thao tác này không thể hoàn tác.',
+    confirmText:'Xóa file đã chọn',
+    cancelText:'Hủy'
+  });
+  if(!ok) return;
+
+  let success = 0;
+  let deletedRows = 0;
+  const errors = [];
+  showLoading('Đang xóa 0/' + selectedFiles.length + ' file…');
+
+  for(let i=0;i<selectedFiles.length;i++){
+    const f = selectedFiles[i];
+    showLoading('Đang xóa ' + (i+1) + '/' + selectedFiles.length + ': ' + f.file_name);
+    try{
+      const res = await authFetch('/data/files/' + f.id, {method:'DELETE'});
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.detail || 'Xóa thất bại');
+      success++;
+      deletedRows += +(data.deleted_rows || 0);
+      APP.selectedFileIds.delete(String(f.id));
+    }catch(e){
+      errors.push(f.file_name + ': ' + e.message);
+    }
+  }
+
+  hideLoading();
+  clearFileSelection();
+  await loadFiles();
+  await fetchData();
+
+  if(errors.length){
+    showAlert('error','Đã xóa '+success+'/'+selectedFiles.length+' file. Lỗi: '+errors.map(esc).join('; '));
+  }else{
+    showAlert('success','Đã xóa <strong>'+success+'</strong> file và <strong>'+fmtN(deletedRows)+'</strong> dòng dữ liệu.');
+  }
 }
 
 async function loadAuditLogs(){
