@@ -1897,7 +1897,7 @@ tbody tr:hover {
 
 <script>
 const API = '';
-const APP = {allRows:[], charts:{}, perms:null, user:null, violationStudents:[], users:[], importedFiles:[], selectedFileIds:new Set()};
+const APP = {allRows:[], charts:{}, perms:null, user:null, violationStudents:[], users:[], importedFiles:[], selectedFileIds:new Set(), activeTab:'overview', pendingChartData:null, chartsDirty:false};
 const FK = ['month','week','level','grade','className','category','issue'];
 const C = {orange:'#F36F21',blue:'#005BAC',green:'#5CB85C',red:'#dc2626',purple:'#7c5cfc',teal:'#0d9488',pink:'#db2777',amber:'#d97706',slate:'#64748b',sky:'#0284c7'};
 const COLORS = [C.orange,C.blue,C.green,C.red,C.purple,C.teal,C.pink,C.amber,C.slate,C.sky];
@@ -2052,6 +2052,7 @@ function buildTabs(){
 }
 
 function switchTab(tid){
+  APP.activeTab = tid;
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
   document.querySelector(`[data-tab="${tid}"]`)?.classList.add('active');
@@ -2081,7 +2082,12 @@ function switchTab(tid){
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
   if (tid === 'overview') {
-    setTimeout(()=>Object.values(APP.charts).forEach(c=>{try{c.resize()}catch(e){}}),80);
+    if (APP.chartsDirty && APP.pendingChartData) {
+      renderCharts(APP.pendingChartData);
+      APP.chartsDirty = false;
+    } else {
+      setTimeout(()=>Object.values(APP.charts).forEach(c=>{try{c.resize()}catch(e){}}),80);
+    }
   }
 }
 
@@ -2134,7 +2140,13 @@ function applyFilters(){
   renderDetailTablePage(1);
 
   renderWarningTab(officialFiltered);renderTrend('class');
-  renderCharts({ranking,issues,daily,categories});
+  APP.pendingChartData = {ranking,issues,daily,categories};
+  if (APP.activeTab === 'overview') {
+    renderCharts(APP.pendingChartData);
+    APP.chartsDirty = false;
+  } else {
+    APP.chartsDirty = true;
+  }
 }
 function resetFilters(){FK.forEach(k=>{el('f_'+k).value=''});buildFilterOptions(APP.allRows);applyFilters()}
 
