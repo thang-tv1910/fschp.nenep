@@ -21,7 +21,7 @@ from app.auth import (
 from app.config import get_settings
 from app.database import get_conn, init_db
 from app.parser import parse_excel
-from app.security import verify_password
+from app.security import verify_password, hash_password
 
 settings = get_settings()
 FRONTEND_DIR = settings.frontend_dir
@@ -42,16 +42,35 @@ class DriveLinkRequest(BaseModel):
     override_password: str = Field(default="", max_length=200)
 
 
+class UserCreateRequest(BaseModel):
+    username: str = Field(min_length=3, max_length=80)
+    password: str = Field(min_length=6, max_length=200)
+    display_name: str = Field(min_length=1, max_length=120)
+    role: str = Field(min_length=1, max_length=40)
+    folder: str = Field(default="", max_length=80)
+    email: str = Field(default="", max_length=160)
+
+
+class UserUpdateRequest(BaseModel):
+    display_name: str = Field(min_length=1, max_length=120)
+    role: str = Field(min_length=1, max_length=40)
+    folder: str = Field(default="", max_length=80)
+    email: str = Field(default="", max_length=160)
+    is_active: bool = True
+    password: str = Field(default="", max_length=200)
+
+
 @app.on_event("startup")
 def startup():
     init_db()
+    ensure_user_management_schema()
 
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type"],
 )
 
@@ -76,7 +95,7 @@ def enforce_rate_limit(request: Request, bucket_name: str, max_requests: int):
 async def security_headers(request: Request, call_next):
     if request.url.path == "/auth/login":
         enforce_rate_limit(request, "auth", settings.auth_rate_limit)
-    elif request.url.path.startswith(("/data/", "/upload/", "/auth/me")):
+    elif request.url.path.startswith(("/data/", "/upload/", "/api/", "/auth/me")):
         enforce_rate_limit(request, "api", settings.api_rate_limit)
 
     response = await call_next(request)
@@ -206,6 +225,54 @@ def assert_role(current_user: dict, allowed_roles: set[str]):
     role = current_user.get("role", "")
     if role not in allowed_roles:
         raise HTTPException(status_code=403, detail="Không có quyền truy cập")
+
+
+def require_admin(current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Chỉ admin mới được quản lý người dùng")
+    return current_user
+
+
+def normalize_text(value: str) -> str:
+    return (value or "").strip()
+
+
+def validate_role_value(role: str) -> str:
+    role = normalize_text(role)
+    if role not in ALLOWED_ROLES:
+        raise HTTPException(status_code=400, detail="Vai trò không hợp lệ")
+    return role
+
+
+def normalize_folder_value(role: str, folder: str = "") -> str:
+    folder = normalize_text(folder)
+    if not folder:
+        return "all" if role in GLOBAL_ROLES else role
+    if folder == "all" and role not in GLOBAL_ROLES:
+        return role
+    allowed_folders = {"all", "bangiamhieu", "quanly", "giamthi", "bantru"}
+    if folder not in allowed_folders:
+        raise HTTPException(status_code=400, detail="Phạm vi dữ liệu không hợp lệ")
+    return folder
+
+
+def ensure_user_management_schema():
+    conn = get_conn()
+    try:
+        columns = {row["name"] for row in conn.execute("PRAGMA table_info(users)").fetchall()}
+        if "email" not in columns:
+            conn.execute("ALTER TABLE users ADD COLUMN email TEXT")
+            conn.commit()
+    finally:
+        conn.close()
+
+
+def public_user(row):
+    data = dict(row)
+    data.pop("password", None)
+    data["is_active"] = bool(data.get("is_active"))
+    data.setdefault("email", "")
+    return data
 
 
 def validate_file_name(file_name: str) -> str:
@@ -701,6 +768,157 @@ def delete_file_data(file_id: int, current_user: dict = Depends(get_current_user
         "file": dict(file)["file_name"],
         "deleted_rows": deleted
     }
+
+
+@app.get("/api/users")
+def list_users(current_user: dict = Depends(require_admin)):
+    conn = get_conn()
+    try:
+        rows = conn.execute("""
+            SELECT id, username, role, display_name, folder, is_active, created_at,
+                   COALESCE(email, '') AS email
+            FROM users
+            ORDER BY is_active DESC, role, username
+        """).fetchall()
+        return {"users": [public_user(row) for row in rows]}
+    finally:
+        conn.close()
+
+
+@app.post("/api/users")
+def create_user(payload: UserCreateRequest, current_user: dict = Depends(require_admin)):
+    username = normalize_text(payload.username).lower()
+    display_name = normalize_text(payload.display_name)
+    email = normalize_text(payload.email).lower()
+    role = validate_role_value(payload.role)
+    folder = normalize_folder_value(role, payload.folder)
+
+    if not re.match(r"^[a-zA-Z0-9_.@-]+$", username):
+        raise HTTPException(status_code=400, detail="Username chỉ nên gồm chữ, số, dấu chấm, gạch dưới, gạch ngang hoặc @")
+    if len(payload.password) < 6:
+        raise HTTPException(status_code=400, detail="Mật khẩu tối thiểu 6 ký tự")
+
+    conn = get_conn()
+    try:
+        existing = conn.execute("SELECT id FROM users WHERE username=?", (username,)).fetchone()
+        if existing:
+            raise HTTPException(status_code=409, detail="Username đã tồn tại")
+
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO users (username, password, role, display_name, folder, is_active, email)
+            VALUES (?, ?, ?, ?, ?, 1, ?)
+        """, (
+            username,
+            hash_password(payload.password),
+            role,
+            display_name,
+            folder,
+            email,
+        ))
+        conn.commit()
+
+        row = conn.execute("""
+            SELECT id, username, role, display_name, folder, is_active, created_at,
+                   COALESCE(email, '') AS email
+            FROM users
+            WHERE id=?
+        """, (cur.lastrowid,)).fetchone()
+        return {"message": "Đã tạo người dùng", "user": public_user(row)}
+    finally:
+        conn.close()
+
+
+@app.put("/api/users/{user_id}")
+def update_user(user_id: int, payload: UserUpdateRequest, current_user: dict = Depends(require_admin)):
+    role = validate_role_value(payload.role)
+    folder = normalize_folder_value(role, payload.folder)
+    display_name = normalize_text(payload.display_name)
+    email = normalize_text(payload.email).lower()
+
+    conn = get_conn()
+    try:
+        user = conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+        if not user:
+            raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+
+        if user["username"] == current_user.get("username") and not payload.is_active:
+            raise HTTPException(status_code=400, detail="Không thể khóa chính tài khoản admin đang đăng nhập")
+
+        if payload.password:
+            if len(payload.password) < 6:
+                raise HTTPException(status_code=400, detail="Mật khẩu tối thiểu 6 ký tự")
+            conn.execute("""
+                UPDATE users
+                SET display_name=?, role=?, folder=?, is_active=?, email=?, password=?
+                WHERE id=?
+            """, (
+                display_name,
+                role,
+                folder,
+                1 if payload.is_active else 0,
+                email,
+                hash_password(payload.password),
+                user_id,
+            ))
+        else:
+            conn.execute("""
+                UPDATE users
+                SET display_name=?, role=?, folder=?, is_active=?, email=?
+                WHERE id=?
+            """, (
+                display_name,
+                role,
+                folder,
+                1 if payload.is_active else 0,
+                email,
+                user_id,
+            ))
+        conn.commit()
+
+        row = conn.execute("""
+            SELECT id, username, role, display_name, folder, is_active, created_at,
+                   COALESCE(email, '') AS email
+            FROM users
+            WHERE id=?
+        """, (user_id,)).fetchone()
+        return {"message": "Đã cập nhật người dùng", "user": public_user(row)}
+    finally:
+        conn.close()
+
+
+@app.patch("/api/users/{user_id}/role")
+def update_user_role(user_id: int, role: str = Form(...), current_user: dict = Depends(require_admin)):
+    role = validate_role_value(role)
+    folder = normalize_folder_value(role)
+
+    conn = get_conn()
+    try:
+        user = conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+        if not user:
+            raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+        conn.execute("UPDATE users SET role=?, folder=? WHERE id=?", (role, folder, user_id))
+        conn.commit()
+        return {"message": "Đã đổi vai trò"}
+    finally:
+        conn.close()
+
+
+@app.delete("/api/users/{user_id}")
+def delete_user(user_id: int, current_user: dict = Depends(require_admin)):
+    conn = get_conn()
+    try:
+        user = conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+        if not user:
+            raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+        if user["username"] == current_user.get("username"):
+            raise HTTPException(status_code=400, detail="Không thể khóa chính tài khoản admin đang đăng nhập")
+
+        conn.execute("UPDATE users SET is_active=0 WHERE id=?", (user_id,))
+        conn.commit()
+        return {"message": "Đã khóa tài khoản"}
+    finally:
+        conn.close()
 
 
 @app.get("/data/permissions")

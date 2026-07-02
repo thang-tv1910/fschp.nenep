@@ -1790,15 +1790,15 @@ tbody tr:hover {
     <div class="panel">
       <div class="user-toolbar">
         <div><h3 style="margin:0">Quản lý người dùng</h3><p style="color:var(--text-muted);font-size:13px;margin-top:4px">Tạo tài khoản, phân quyền và theo dõi vai trò người dùng.</p></div>
-        <button class="btn btn-primary" onclick="openCreateUserModal()">+ Tạo người dùng</button>
+        <button class="btn btn-primary" id="btnCreateUser" onclick="openCreateUserModal()">+ Tạo người dùng</button>
       </div>
       <div class="user-cards">
-        <div class="user-stat"><div class="label">Tổng user</div><div class="value" id="userStatTotal">5</div></div>
-        <div class="user-stat"><div class="label">Quản trị</div><div class="value">1</div></div>
-        <div class="user-stat"><div class="label">BGH / Quản lý</div><div class="value">2</div></div>
-        <div class="user-stat"><div class="label">Bộ phận nhập liệu</div><div class="value">2</div></div>
+        <div class="user-stat"><div class="label">Tổng user</div><div class="value" id="userStatTotal">0</div></div>
+        <div class="user-stat"><div class="label">Quản trị</div><div class="value" id="userStatAdmin">0</div></div>
+        <div class="user-stat"><div class="label">BGH / Quản lý</div><div class="value" id="userStatManager">0</div></div>
+        <div class="user-stat"><div class="label">Bộ phận nhập liệu</div><div class="value" id="userStatInput">0</div></div>
       </div>
-      <div class="user-toolbar"><input class="user-search" id="userSearch" placeholder="Tìm kiếm người dùng..." oninput="renderUsersTable()"><button class="btn btn-secondary btn-sm" onclick="renderUsersTable()">Làm mới</button></div>
+      <div class="user-toolbar"><input class="user-search" id="userSearch" placeholder="Tìm kiếm người dùng..." oninput="renderUsersTable()"><button class="btn btn-secondary btn-sm" onclick="loadUsers()">Làm mới</button></div>
       <div class="table-wrap" id="tableUsers"></div>
     </div>
   </section>
@@ -1821,7 +1821,7 @@ tbody tr:hover {
 
 <script>
 const API = '';
-const APP = {allRows:[], charts:{}, perms:null, user:null, violationStudents:[]};
+const APP = {allRows:[], charts:{}, perms:null, user:null, violationStudents:[], users:[]};
 const FK = ['month','week','level','grade','className','category','issue'];
 const C = {orange:'#F36F21',blue:'#005BAC',green:'#5CB85C',red:'#dc2626',purple:'#7c5cfc',teal:'#0d9488',pink:'#db2777',amber:'#d97706',slate:'#64748b',sky:'#0284c7'};
 const COLORS = [C.orange,C.blue,C.green,C.red,C.purple,C.teal,C.pink,C.amber,C.slate,C.sky];
@@ -1886,6 +1886,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     buildTabs();
     initDragDrop();
     fetchData();
+    if (APP.perms?.can_manage_users) loadUsers();
   } catch(e){ doLogout() }
 });
 
@@ -2409,28 +2410,215 @@ function clearQuickForm(){['quickStudent','quickIssue','quickNote'].forEach(id=>
 function saveQuickRecord(){
   showModal({title:'Nhập nhanh đang chờ backend',icon:'i',body:'Giao diện nhập nhanh đã sẵn sàng. Để lưu thật từng dòng, cần bổ sung endpoint backend kiểu <strong>POST /records/manual</strong>. Logic upload file hiện tại vẫn giữ nguyên.',confirmText:'Đã hiểu',cancelText:'Đóng'});
 }
-const DEMO_USERS=[
-  {username:'admin',display:'admin',email:'admin@fpt.edu.vn',role:'admin',school:'FPT Hải Phòng',status:'Online'},
-  {username:'bgh',display:'Ban Giám Hiệu',email:'bgh@fpt.edu.vn',role:'bangiamhieu',school:'FPT Hải Phòng',status:'Online'},
-  {username:'quanly',display:'Quản lý trường',email:'quanly@fpt.edu.vn',role:'quanly',school:'FPT Hải Phòng',status:'Offline'},
-  {username:'giamthi',display:'Bộ phận Giám thị',email:'giamthi@fpt.edu.vn',role:'giamthi',school:'FPT Hải Phòng',status:'Online'},
-  {username:'bantru',display:'Bộ phận Bán trú',email:'bantru@fpt.edu.vn',role:'bantru',school:'FPT Hải Phòng',status:'Offline'}
-];
-function roleLabel(r){return {admin:'Admin',bangiamhieu:'Ban Giám Hiệu',quanly:'Quản lý',giamthi:'Giám thị',bantru:'Bán trú'}[r]||r}
+const ROLE_LABELS = {admin:'Admin',bangiamhieu:'Ban Giám Hiệu',quanly:'Quản lý',giamthi:'Giám thị',bantru:'Bán trú'};
+const FOLDER_LABELS = {all:'Toàn trường',bangiamhieu:'Ban Giám Hiệu',quanly:'Quản lý',giamthi:'Giám thị',bantru:'Bán trú'};
+
+function roleLabel(r){return ROLE_LABELS[r]||r}
+function folderLabel(f){return FOLDER_LABELS[f]||f||''}
+function canManageUsers(){return APP.perms?.can_manage_users === true && APP.user?.role === 'admin'}
+
+async function apiJson(url, opts={}){
+  opts.credentials = 'include';
+  opts.headers = {'Content-Type':'application/json', ...(opts.headers||{})};
+  const res = await fetch(API+url, opts);
+  let data = {};
+  try { data = await res.json(); } catch(e) {}
+  if(!res.ok){
+    const detail = data?.detail;
+    const msg = typeof detail === 'string' ? detail : (detail?.message || data?.message || 'Có lỗi xảy ra');
+    throw new Error(msg);
+  }
+  return data;
+}
+
+async function loadUsers(){
+  if(!canManageUsers()){
+    if(el('tableUsers')) el('tableUsers').innerHTML = '<div class="empty-state"><p>Bạn không có quyền quản lý người dùng.</p></div>';
+    return;
+  }
+  try{
+    showLoading('Đang tải danh sách người dùng…');
+    const data = await apiJson('/api/users');
+    APP.users = data.users || [];
+    renderUsersTable();
+  }catch(e){
+    showAlert('error', esc(e.message || 'Không tải được danh sách người dùng'));
+  }finally{
+    hideLoading();
+  }
+}
+
+function renderUserStats(users){
+  const total = users.length;
+  const admins = users.filter(u=>u.role==='admin').length;
+  const managers = users.filter(u=>['bangiamhieu','quanly'].includes(u.role)).length;
+  const input = users.filter(u=>['giamthi','bantru'].includes(u.role)).length;
+  if(el('userStatTotal')) el('userStatTotal').textContent = total;
+  if(el('userStatAdmin')) el('userStatAdmin').textContent = admins;
+  if(el('userStatManager')) el('userStatManager').textContent = managers;
+  if(el('userStatInput')) el('userStatInput').textContent = input;
+}
+
 function renderUsersTable(){
-  const q=(el('userSearch')?.value||'').toLowerCase();
-  const rows=DEMO_USERS.filter(u=>(u.username+u.display+u.email+u.role).toLowerCase().includes(q));
-  if(el('userStatTotal')) el('userStatTotal').textContent=DEMO_USERS.length;
-  mkTable('tableUsers',['Người dùng','Email','Vai trò','Trường','Trạng thái','Thao tác'],rows.map(u=>[
-    '<span class="user-avatar-sm">'+esc((u.display||u.username).slice(0,2).toUpperCase())+'</span><strong>'+esc(u.display)+'</strong><br><span style="color:var(--text-muted);font-size:12px">@'+esc(u.username)+'</span>',
-    esc(u.email),'<span class="pill">'+esc(roleLabel(u.role))+'</span>',esc(u.school),
-    u.status==='Online'?'<span class="text-green"><span class="status-dot on"></span>Online</span>':'<span style="color:var(--text-muted)"><span class="status-dot"></span>Offline</span>',
-    '<button class="btn btn-secondary btn-sm" onclick="showAlert(\'info\',\'Chức năng sửa user cần API backend.\')">Sửa</button>'
+  const users = APP.users || [];
+  renderUserStats(users);
+  const q=(el('userSearch')?.value||'').toLowerCase().trim();
+  const rows=users.filter(u=>(
+    (u.username||'') + ' ' + (u.display_name||'') + ' ' + (u.email||'') + ' ' + (u.role||'') + ' ' + (u.folder||'')
+  ).toLowerCase().includes(q));
+
+  mkTable('tableUsers',['Người dùng','Email','Vai trò','Phạm vi','Trạng thái','Thao tác'],rows.map(u=>[
+    '<span class="user-avatar-sm">'+esc((u.display_name||u.username||'?').slice(0,2).toUpperCase())+'</span><strong>'+esc(u.display_name||u.username)+'</strong><br><span style="color:var(--text-muted);font-size:12px">@'+esc(u.username)+'</span>',
+    esc(u.email || ''),
+    '<span class="pill">'+esc(roleLabel(u.role))+'</span>',
+    esc(folderLabel(u.folder)),
+    u.is_active?'<span class="text-green"><span class="status-dot on"></span>Active</span>':'<span style="color:var(--text-muted)"><span class="status-dot"></span>Locked</span>',
+    '<div style="display:flex;gap:6px;flex-wrap:wrap">'
+      + '<button class="btn btn-secondary btn-sm" onclick="openEditUserModal('+Number(u.id)+')">Sửa</button>'
+      + (u.username===APP.user?.username ? '' : '<button class="btn btn-danger btn-sm" onclick="lockUser('+Number(u.id)+')">Khóa</button>')
+      + '</div>'
   ]));
 }
-function openCreateUserModal(){
-  showModal({title:'Tạo người dùng',icon:'U',body:'UI tạo người dùng đã sẵn sàng về mặt thiết kế. Để tạo tài khoản thật, cần thêm endpoint backend <strong>POST /users</strong> rồi nối form này vào API.',confirmText:'OK',cancelText:'Đóng'});
+
+function userFormHtml(user={}){
+  const isEdit = !!user.id;
+  const role = user.role || 'giamthi';
+  const folder = user.folder || (['admin','bangiamhieu','quanly'].includes(role)?'all':role);
+  const active = user.is_active !== false;
+  return `
+    <div class="quick-form" style="grid-template-columns:1fr;gap:12px">
+      <div class="field">
+        <label>Họ tên / Tên hiển thị</label>
+        <input id="ufDisplayName" value="${esc(user.display_name||'')}" placeholder="Ví dụ: Bộ phận Giám thị">
+      </div>
+      <div class="field">
+        <label>Username</label>
+        <input id="ufUsername" value="${esc(user.username||'')}" placeholder="Ví dụ: giamthi01" ${isEdit?'disabled':''}>
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input id="ufEmail" value="${esc(user.email||'')}" placeholder="Ví dụ: giamthi@fpt.edu.vn">
+      </div>
+      <div class="field">
+        <label>${isEdit?'Mật khẩu mới, bỏ trống nếu không đổi':'Mật khẩu'}</label>
+        <input id="ufPassword" type="password" placeholder="${isEdit?'Không đổi mật khẩu':'Tối thiểu 6 ký tự'}">
+      </div>
+      <div class="field">
+        <label>Vai trò</label>
+        <select id="ufRole" onchange="syncUserFolderByRole()">
+          ${Object.entries(ROLE_LABELS).map(([k,v])=>`<option value="${k}" ${k===role?'selected':''}>${v}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label>Phạm vi dữ liệu</label>
+        <select id="ufFolder">
+          ${Object.entries(FOLDER_LABELS).map(([k,v])=>`<option value="${k}" ${k===folder?'selected':''}>${v}</option>`).join('')}
+        </select>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text)">
+        <input id="ufActive" type="checkbox" ${active?'checked':''}> Tài khoản đang hoạt động
+      </label>
+    </div>`;
 }
+
+function syncUserFolderByRole(){
+  const role = el('ufRole')?.value || '';
+  const folderEl = el('ufFolder');
+  if(!folderEl) return;
+  if(['admin','bangiamhieu','quanly'].includes(role)) folderEl.value = 'all';
+  else folderEl.value = role;
+}
+
+function collectUserForm(isEdit=false){
+  const payload = {
+    display_name: el('ufDisplayName')?.value.trim() || '',
+    username: el('ufUsername')?.value.trim() || '',
+    email: el('ufEmail')?.value.trim() || '',
+    password: el('ufPassword')?.value || '',
+    role: el('ufRole')?.value || '',
+    folder: el('ufFolder')?.value || '',
+    is_active: !!el('ufActive')?.checked
+  };
+  if(!payload.display_name) throw new Error('Vui lòng nhập tên hiển thị');
+  if(!isEdit && !payload.username) throw new Error('Vui lòng nhập username');
+  if(!isEdit && payload.password.length < 6) throw new Error('Mật khẩu tối thiểu 6 ký tự');
+  if(isEdit && payload.password && payload.password.length < 6) throw new Error('Mật khẩu tối thiểu 6 ký tự');
+  return payload;
+}
+
+async function openCreateUserModal(){
+  if(!canManageUsers()) return showAlert('error','Bạn không có quyền tạo người dùng.');
+  const ok = await showModal({
+    title:'Tạo người dùng',
+    icon:'user-plus',
+    body:userFormHtml(),
+    confirmText:'Tạo',
+    cancelText:'Hủy'
+  });
+  if(!ok) return;
+  try{
+    const payload = collectUserForm(false);
+    showLoading('Đang tạo người dùng…');
+    await apiJson('/api/users', {method:'POST', body:JSON.stringify(payload)});
+    showAlert('success','Đã tạo người dùng.');
+    await loadUsers();
+  }catch(e){
+    showAlert('error', esc(e.message || 'Không tạo được người dùng'));
+  }finally{
+    hideLoading();
+  }
+}
+
+async function openEditUserModal(userId){
+  if(!canManageUsers()) return showAlert('error','Bạn không có quyền sửa người dùng.');
+  const user = (APP.users||[]).find(u=>Number(u.id)===Number(userId));
+  if(!user) return showAlert('error','Không tìm thấy người dùng.');
+  const ok = await showModal({
+    title:'Sửa người dùng',
+    icon:'edit',
+    body:userFormHtml(user),
+    confirmText:'Lưu',
+    cancelText:'Hủy'
+  });
+  if(!ok) return;
+  try{
+    const payload = collectUserForm(true);
+    delete payload.username;
+    showLoading('Đang cập nhật người dùng…');
+    await apiJson('/api/users/'+encodeURIComponent(userId), {method:'PUT', body:JSON.stringify(payload)});
+    showAlert('success','Đã cập nhật người dùng.');
+    await loadUsers();
+  }catch(e){
+    showAlert('error', esc(e.message || 'Không cập nhật được người dùng'));
+  }finally{
+    hideLoading();
+  }
+}
+
+async function lockUser(userId){
+  if(!canManageUsers()) return showAlert('error','Bạn không có quyền khóa người dùng.');
+  const user = (APP.users||[]).find(u=>Number(u.id)===Number(userId));
+  if(!user) return showAlert('error','Không tìm thấy người dùng.');
+  const ok = await showModal({
+    title:'Khóa tài khoản',
+    icon:'alert-triangle',
+    body:'Bạn chắc chắn muốn khóa tài khoản <strong>@'+esc(user.username)+'</strong>? Người dùng này sẽ không đăng nhập được nữa.',
+    confirmText:'Khóa',
+    cancelText:'Hủy'
+  });
+  if(!ok) return;
+  try{
+    showLoading('Đang khóa tài khoản…');
+    await apiJson('/api/users/'+encodeURIComponent(userId), {method:'DELETE'});
+    showAlert('success','Đã khóa tài khoản.');
+    await loadUsers();
+  }catch(e){
+    showAlert('error', esc(e.message || 'Không khóa được tài khoản'));
+  }finally{
+    hideLoading();
+  }
+}
+
 
 // ── EXPORT ──
 function exportCSV(){if(!APP.allRows.length)return;const h=['Ngày','Tuần','Tháng','Cấp','Khối','Lớp','Mã HS','Họ tên','Lỗi','Phân loại','Điểm','Ghi chú','File'],k=['dateLabel','week','month','level','grade','className','studentId','studentName','issue','category','point','note','sourceFile'];const csv='\uFEFF'+[h.map(csvC).join(','),...APP.allRows.map(r=>k.map(x=>csvC(r[x])).join(','))].join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download='thidua_chitiet.csv';a.click()}
