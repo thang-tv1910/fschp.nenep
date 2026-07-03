@@ -82,15 +82,20 @@ def fuzzy_score(a, b):
     return SequenceMatcher(None, normalize_text(a), normalize_text(b)).ratio()
 
 
-def get_point_from_rule(issue_text, is_violation=True):
+def load_active_point_rules():
     conn = get_conn()
-    rules = conn.execute("""
-        SELECT keyword, point
-        FROM point_rules
-        WHERE is_active=1
-    """).fetchall()
-    conn.close()
+    try:
+        rules = conn.execute("""
+            SELECT keyword, point
+            FROM point_rules
+            WHERE is_active=1
+        """).fetchall()
+        return [{"keyword": r["keyword"], "point": r["point"]} for r in rules]
+    finally:
+        conn.close()
 
+
+def get_point_from_rule(issue_text, rules, is_violation=True):
     best_score = 0
     best_point = None
 
@@ -193,6 +198,7 @@ def parse_loi_file(file_path, folder, filename):
 
     target_sheets = ["Chi Tiết", "CT 2"]
     date_obj = parse_date_from_text(filename)
+    rules = load_active_point_rules()
 
     for sheet in excel.sheet_names:
         if sheet not in target_sheets:
@@ -210,7 +216,7 @@ def parse_loi_file(file_path, folder, filename):
             if not student or not issue:
                 continue
 
-            point = get_point_from_rule(issue, is_violation=True)
+            point = get_point_from_rule(issue, rules, is_violation=True)
             row_date = get_row_date(row, date_obj)
 
             rows.append(build_row(
@@ -235,6 +241,7 @@ def parse_khen_file(file_path, folder, filename):
     excel = pd.ExcelFile(file_path)
 
     skip_sheets = ["Tổng Hợp", "Tong Hop", "Sheet1", "Sheet2", "Sheet3", "Sheet4"]
+    rules = load_active_point_rules()
 
     for sheet in excel.sheet_names:
         if sheet.strip() in skip_sheets:
@@ -253,7 +260,7 @@ def parse_khen_file(file_path, folder, filename):
             if not student or not issue:
                 continue
 
-            point = get_point_from_rule(issue, is_violation=False)
+            point = get_point_from_rule(issue, rules, is_violation=False)
             row_date = get_row_date(row, date_obj)
 
             rows.append(build_row(
