@@ -88,7 +88,7 @@ def _translate(sql: str) -> str:
 class PGCursor:
     def __init__(self, raw_cursor):
         self._cur = raw_cursor
-        self.lastrowid = None
+        self._insert_happened = False
 
     def execute(self, sql, params=None):
         pragma_match = _PRAGMA_RE.search(sql)
@@ -99,22 +99,27 @@ class PGCursor:
                 "WHERE table_schema = 'public' AND table_name = %s",
                 (table,),
             )
+            self._insert_happened = False
             return self
 
         pg_sql = _translate(sql)
-
-        if _INSERT_RE.match(pg_sql) and "RETURNING" not in pg_sql.upper():
-            pg_sql = pg_sql.rstrip().rstrip(";") + " RETURNING id"
-            self._cur.execute(pg_sql, params or ())
-            try:
-                row = self._cur.fetchone()
-                self.lastrowid = row["id"] if row else None
-            except psycopg2.ProgrammingError:
-                self.lastrowid = None
-        else:
-            self._cur.execute(pg_sql, params or ())
-
+        self._cur.execute(pg_sql, params or ())
+        self._insert_happened = bool(_INSERT_RE.match(pg_sql))
         return self
+
+    @property
+    def lastrowid(self):
+        # Lazy: only costs an extra query when main.py actually reads .lastrowid,
+        # not on every single row inserted in a bulk-upload loop.
+        if not self._insert_happened:
+            return None
+        try:
+            tmp = self._cur.connection.cursor()
+            tmp.execute("SELECT lastval()")
+            row = tmp.fetchone()
+            return row[0] if row else None
+        except Exception:
+            return None
 
     def executescript(self, sql):
         self._cur.execute(sql)
