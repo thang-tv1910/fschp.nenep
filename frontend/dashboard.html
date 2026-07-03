@@ -1930,11 +1930,11 @@ tbody tr:hover {
 
       <h4 style="margin:0 0 10px">Chọn nội dung đưa vào báo cáo</h4>
       <div class="quick-form" style="grid-template-columns:1fr;gap:10px;margin-bottom:20px">
-        <label style="display:flex;align-items:center;gap:8px;font-size:14px"><input type="checkbox" id="repSecOverview" checked> Tổng quan (điểm sức khỏe, tổng điểm, lượt vi phạm...)</label>
-        <label style="display:flex;align-items:center;gap:8px;font-size:14px"><input type="checkbox" id="repSecRanking" checked> Bảng xếp hạng lớp</label>
-        <label style="display:flex;align-items:center;gap:8px;font-size:14px"><input type="checkbox" id="repSecIssues" checked> Cơ cấu lỗi vi phạm</label>
-        <label style="display:flex;align-items:center;gap:8px;font-size:14px"><input type="checkbox" id="repSecDaily" checked> Thống kê theo ngày</label>
-        <label style="display:flex;align-items:center;gap:8px;font-size:14px"><input type="checkbox" id="repSecDetail"> Chi tiết từng lượt ghi nhận (danh sách đầy đủ, có thể rất dài)</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px;text-transform:none;letter-spacing:normal;font-weight:400"><input type="checkbox" id="repSecOverview" style="width:auto" checked> Tổng quan (điểm sức khỏe, tổng điểm, lượt vi phạm...)</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px;text-transform:none;letter-spacing:normal;font-weight:400"><input type="checkbox" id="repSecRanking" style="width:auto" checked> Bảng xếp hạng lớp</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px;text-transform:none;letter-spacing:normal;font-weight:400"><input type="checkbox" id="repSecIssues" style="width:auto" checked> Cơ cấu lỗi vi phạm</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px;text-transform:none;letter-spacing:normal;font-weight:400"><input type="checkbox" id="repSecDaily" style="width:auto" checked> Thống kê theo ngày</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px;text-transform:none;letter-spacing:normal;font-weight:400"><input type="checkbox" id="repSecDetail" style="width:auto"> Chi tiết từng lượt ghi nhận (danh sách đầy đủ, có thể rất dài)</label>
       </div>
       <button class="btn btn-primary" onclick="generateExcelReport()"><i class="ti ti-file-spreadsheet"></i>Xuất file Excel</button>
     </div>
@@ -2901,7 +2901,7 @@ function userFormHtml(user={}){
         </select>
       </div>
       <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text)">
-        <input id="ufActive" type="checkbox" ${active?'checked':''}> Tài khoản đang hoạt động
+        <input id="ufActive" type="checkbox" style="width:auto" ${active?'checked':''}> Tài khoản đang hoạt động
       </label>
     </div>`;
 }
@@ -3163,7 +3163,7 @@ function pointRuleFormHtml(rule={}){
         <input id="prNote" value="${esc(rule.note||'')}" placeholder="Không bắt buộc">
       </div>
       <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text)">
-        <input id="prActive" type="checkbox" ${active?'checked':''}> Đang áp dụng
+        <input id="prActive" type="checkbox" style="width:auto" ${active?'checked':''}> Đang áp dụng
       </label>
     </div>`;
 }
