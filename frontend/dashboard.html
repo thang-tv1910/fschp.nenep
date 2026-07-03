@@ -1730,7 +1730,7 @@ tbody tr:hover {
 
   <div id="filtersSection">
     <div class="filters">
-      <div class="filter-group"><label>Tháng</label><select id="f_month" onchange="buildFilterOptions(APP.allRows);applyFilters()"></select></div>
+      <div class="filter-group"><label>Tháng</label><select id="f_month" onchange="updateWeekOptionsForMonth(APP.allRows);applyFilters()"></select></div>
       <div class="filter-group"><label>Tuần</label><select id="f_week" onchange="applyFilters()"></select></div>
       <div class="filter-group"><label>Cấp học</label><select id="f_level" onchange="applyFilters()"></select></div>
       <div class="filter-group"><label>Khối</label><select id="f_grade" onchange="applyFilters()"></select></div>
@@ -2170,6 +2170,15 @@ function buildRanking(rows){
 function buildIssues(rows){const m={};rows.forEach(r=>{const k=r.issue||'?';if(!m[k])m[k]={issue:k,category:r.category||'',count:0,minus:0,score:0};m[k].count++;const p=+r.point||0;m[k].score+=p;if(p<0)m[k].minus+=Math.abs(p)});return Object.values(m).sort((a,b)=>b.minus-a.minus||b.count-a.count).map(x=>({issue:x.issue,category:x.category,count:x.count,minus:rd(x.minus),score:rd(x.score)}))}
 function buildDaily(rows){const m={};rows.forEach(r=>{const k=r.date||'?';if(!m[k])m[k]={date:r.dateLabel||'?',sortKey:k,score:0,plus:0,minus:0,count:0};const p=+r.point||0;m[k].score+=p;if(p>0)m[k].plus+=p;if(p<0)m[k].minus+=Math.abs(p);if(r.isViolation)m[k].count++});return Object.values(m).sort((a,b)=>String(a.sortKey).localeCompare(String(b.sortKey))).map(x=>({date:x.date,score:rd(x.score),plus:rd(x.plus),minus:rd(x.minus),count:x.count}))}
 function buildCategories(rows){const m={};rows.forEach(r=>{const k=r.category||'?';if(!m[k])m[k]={category:k,count:0,minus:0};m[k].count++;if((+r.point||0)<0)m[k].minus+=Math.abs(+r.point||0)});return Object.values(m).sort((a,b)=>b.count-a.count).map(x=>({category:x.category,count:x.count,minus:rd(x.minus)}))}
+function updateWeekOptionsForMonth(rows){
+  const selectedMonth = el('f_month')?.value || '';
+  const selectedWeek = el('f_week')?.value || '';
+  const source = selectedMonth ? rows.filter(r=>r.month===selectedMonth) : rows;
+  const values = [...new Set(source.map(r=>String(r.week||'')).filter(Boolean))].sort((a,b)=>weekNum(a)-weekNum(b));
+  const s = el('f_week');
+  s.innerHTML='<option value="">Tất cả tuần</option>'+values.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
+  s.value = values.includes(selectedWeek) ? selectedWeek : '';
+}
 function buildFilterOptions(rows){
   const selectedMonth = el('f_month')?.value || '';
   const selectedWeek = el('f_week')?.value || '';
