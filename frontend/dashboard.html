@@ -6,6 +6,7 @@
 <title>Dashboard Thi đua Nề nếp — FSCHP</title>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root {
   --fpt-orange: #F37021;
@@ -1880,14 +1881,62 @@ tbody tr:hover {
   </section>
 
   <section id="tab_settings" class="tab-content">
-    <div class="panel">
+    <div class="panel" id="settingsGridPanel">
       <h3>Cài đặt hệ thống</h3>
       <div class="setting-grid">
-        <div class="setting-card"><h4>Quy tắc điểm</h4><p>Quản lý bộ quy tắc cộng/trừ điểm, phân loại lỗi và fuzzy match.</p></div>
-        <div class="setting-card"><h4>Bảo mật ghi đè</h4><p>Mật khẩu ghi đè sau 24h được cấu hình bằng biến môi trường trên server.</p></div>
-        <div class="setting-card"><h4>Phân quyền</h4><p>Admin xóa file; BGH/Quản lý/Giám thị/Bán trú được upload theo quyền.</p></div>
-        <div class="setting-card"><h4>Xuất báo cáo</h4><p>Khu vực cấu hình template báo cáo tuần/tháng cho Ban Giám hiệu.</p></div>
+        <div class="setting-card" style="cursor:pointer" onclick="openSettingsPanel('pointRules')"><h4>Quy tắc điểm</h4><p>Quản lý bộ quy tắc cộng/trừ điểm, phân loại lỗi và fuzzy match.</p></div>
+        <div class="setting-card" style="cursor:pointer" onclick="openSettingsPanel('security')"><h4>Bảo mật ghi đè</h4><p>Mật khẩu ghi đè sau 24h được cấu hình bằng biến môi trường trên server.</p></div>
+        <div class="setting-card" style="cursor:pointer" onclick="openSettingsPanel('permissions')"><h4>Phân quyền</h4><p>Admin xóa file; BGH/Quản lý/Giám thị/Bán trú được upload theo quyền.</p></div>
+        <div class="setting-card" style="cursor:pointer" onclick="openSettingsPanel('report')"><h4>Xuất báo cáo</h4><p>Khu vực cấu hình template báo cáo tuần/tháng cho Ban Giám hiệu.</p></div>
       </div>
+    </div>
+
+    <div class="panel" id="pointRulesPanel" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div>
+          <button class="btn btn-secondary btn-sm" onclick="closeSettingsPanel()" style="margin-bottom:8px"><i class="ti ti-arrow-left"></i>Quay lại</button>
+          <h3 style="margin:0">Quy tắc điểm</h3>
+          <p style="margin:4px 0 0;color:var(--text-muted);font-size:13px">Danh sách quy tắc dùng để fuzzy-match lỗi vi phạm/khen thưởng với điểm cộng-trừ tương ứng.</p>
+        </div>
+        <button class="btn btn-primary" onclick="openCreatePointRuleModal()"><i class="ti ti-plus"></i>Thêm quy tắc</button>
+      </div>
+      <div class="table-wrap" id="pointRulesTable" style="max-height:600px"></div>
+    </div>
+
+    <div class="panel" id="securityPanel" style="display:none">
+      <button class="btn btn-secondary btn-sm" onclick="closeSettingsPanel()" style="margin-bottom:8px"><i class="ti ti-arrow-left"></i>Quay lại</button>
+      <h3 style="margin:0">Bảo mật ghi đè</h3>
+      <p style="margin:4px 0 16px;color:var(--text-muted);font-size:13px">Thông tin cấu hình hiện tại (chỉ xem — đổi mật khẩu ghi đè phải làm trực tiếp trên biến môi trường server, để tránh lưu mật khẩu vào database).</p>
+      <div id="securityInfoBox" class="setting-grid">
+        <div class="setting-card"><h4>Đang tải…</h4></div>
+      </div>
+    </div>
+
+    <div class="panel" id="permissionsPanel" style="display:none">
+      <button class="btn btn-secondary btn-sm" onclick="closeSettingsPanel()" style="margin-bottom:8px"><i class="ti ti-arrow-left"></i>Quay lại</button>
+      <h3 style="margin:0">Phân quyền</h3>
+      <p style="margin:4px 0 16px;color:var(--text-muted);font-size:13px">Ma trận quyền theo vai trò (chỉ xem — quyền hạn hiện được viết cố định trong code backend).</p>
+      <div class="table-wrap" id="permissionsTable"></div>
+    </div>
+
+    <div class="panel" id="reportPanel" style="display:none">
+      <button class="btn btn-secondary btn-sm" onclick="closeSettingsPanel()" style="margin-bottom:8px"><i class="ti ti-arrow-left"></i>Quay lại</button>
+      <h3 style="margin:0">Xuất báo cáo Excel</h3>
+      <p style="margin:12px 0;color:var(--text-muted);font-size:13px;max-width:640px">
+        Báo cáo sẽ xuất đúng theo <strong>bộ lọc đang chọn</strong> ở đầu trang (Tháng/Tuần/Khối/Lớp...).
+        Muốn đổi phạm vi thời gian, quay lại tab Tổng quan chỉnh bộ lọc rồi vào lại đây.
+      </p>
+      <div id="reportFilterSummary" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:var(--text)"></div>
+
+      <h4 style="margin:0 0 10px">Chọn nội dung đưa vào báo cáo</h4>
+      <div class="quick-form" style="grid-template-columns:1fr;gap:10px;margin-bottom:20px">
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px"><input type="checkbox" id="repSecOverview" checked> Tổng quan (điểm sức khỏe, tổng điểm, lượt vi phạm...)</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px"><input type="checkbox" id="repSecRanking" checked> Bảng xếp hạng lớp</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px"><input type="checkbox" id="repSecIssues" checked> Cơ cấu lỗi vi phạm</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px"><input type="checkbox" id="repSecDaily" checked> Thống kê theo ngày</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px"><input type="checkbox" id="repSecDetail"> Chi tiết từng lượt ghi nhận (danh sách đầy đủ, có thể rất dài)</label>
+      </div>
+      <button class="btn btn-primary" onclick="generateExcelReport()"><i class="ti ti-file-spreadsheet"></i>Xuất file Excel</button>
     </div>
   </section>
 
@@ -2132,6 +2181,7 @@ function applyFilters(){
 
   const ranking=buildRanking(officialFiltered),issues=buildIssues(filtered),daily=buildDaily(filtered),categories=buildCategories(filtered);
   const summary=buildSummary(filtered,ranking,officialFiltered);
+  APP.currentSummary = summary;
   renderHealthScore(filtered,summary);renderKPIs(summary);
   renderRankingTable(ranking);renderIssuesTable(issues);renderDailyTable(daily);
 
@@ -2954,6 +3004,244 @@ async function lockUser(userId){
   }
 }
 
+
+// ── SETTINGS PANELS ──
+const FILTER_LABELS = {month:'Tháng',week:'Tuần',level:'Cấp học',grade:'Khối',className:'Lớp',category:'Phân loại',issue:'Lỗi'};
+function getActiveFilterSummaryHtml(){
+  const parts = FK.map(k=>{
+    const v = el('f_'+k)?.value || '';
+    return v ? (FILTER_LABELS[k]+': <b>'+esc(v)+'</b>') : null;
+  }).filter(Boolean);
+  return parts.length ? parts.join(' &nbsp;·&nbsp; ') : 'Không lọc gì — báo cáo sẽ gồm <b>toàn bộ dữ liệu</b> hiện có.';
+}
+function generateExcelReport(){
+  if(typeof XLSX === 'undefined') return showAlert('error','Thư viện xuất Excel chưa tải xong, thử lại sau vài giây.');
+  const s = APP.currentSummary || {};
+  const wb = XLSX.utils.book_new();
+  let sheetCount = 0;
+
+  if(el('repSecOverview')?.checked){
+    const data = [
+      ['Chỉ số','Giá trị'],
+      ['Tổng điểm', s.totalScore ?? 0],
+      ['Điểm cộng', s.totalPlus ?? 0],
+      ['Điểm trừ', s.totalMinus ?? 0],
+      ['Lượt vi phạm', s.totalViolations ?? 0],
+      ['Số học sinh liên quan', s.totalStudents ?? 0],
+      ['Số lớp', s.totalClasses ?? 0],
+      ['Lớp xuất sắc nhất', s.bestClass ?? '—'],
+      ['Lớp cần hỗ trợ', s.warningClass ?? '—'],
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = [{wch:24},{wch:18}];
+    XLSX.utils.book_append_sheet(wb, ws, 'Tổng quan');
+    sheetCount++;
+  }
+  if(el('repSecRanking')?.checked){
+    const ranking = (APP.pendingChartData && APP.pendingChartData.ranking) || [];
+    const data = [['Hạng','Lớp','Cấp','Khối','Điểm','Điểm cộng','Điểm trừ','Số lượt vi phạm','Số HS'],
+      ...ranking.map(r=>[r.rank,r.className,r.level,r.grade,r.score,r.plus,r.minus,r.issueCount,r.studentCount])];
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = [{wch:6},{wch:10},{wch:10},{wch:8},{wch:10},{wch:10},{wch:10},{wch:14},{wch:8}];
+    XLSX.utils.book_append_sheet(wb, ws, 'Xếp hạng lớp');
+    sheetCount++;
+  }
+  if(el('repSecIssues')?.checked){
+    const issues = (APP.pendingChartData && APP.pendingChartData.issues) || [];
+    const data = [['Lỗi / Nội dung','Phân loại','Số lần','Tổng điểm trừ','Tổng điểm'],
+      ...issues.map(x=>[x.issue,x.category,x.count,x.minus,x.score])];
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = [{wch:50},{wch:14},{wch:10},{wch:14},{wch:12}];
+    XLSX.utils.book_append_sheet(wb, ws, 'Cơ cấu lỗi');
+    sheetCount++;
+  }
+  if(el('repSecDaily')?.checked){
+    const daily = (APP.pendingChartData && APP.pendingChartData.daily) || [];
+    const data = [['Ngày','Điểm cộng','Điểm trừ','Tổng điểm','Số lượt vi phạm'],
+      ...daily.map(x=>[x.date,x.plus,x.minus,x.score,x.count])];
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = [{wch:14},{wch:12},{wch:12},{wch:12},{wch:16}];
+    XLSX.utils.book_append_sheet(wb, ws, 'Theo ngày');
+    sheetCount++;
+  }
+  if(el('repSecDetail')?.checked){
+    const rows = APP.filteredDetailRows || [];
+    const data = [['Ngày','Tuần','Tháng','Cấp','Khối','Lớp','Mã HS','Họ tên','Lỗi','Phân loại','Điểm','Ghi chú','File nguồn'],
+      ...rows.map(r=>[r.dateLabel,r.week,r.month,r.level,r.grade,r.className,r.studentId,r.studentName,r.issue,r.category,r.point,r.note,r.sourceFile])];
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = [{wch:12},{wch:8},{wch:10},{wch:8},{wch:8},{wch:10},{wch:12},{wch:20},{wch:40},{wch:14},{wch:8},{wch:24},{wch:20}];
+    XLSX.utils.book_append_sheet(wb, ws, 'Chi tiết');
+    sheetCount++;
+  }
+
+  if(sheetCount === 0) return showAlert('error','Chọn ít nhất 1 nội dung để xuất báo cáo.');
+
+  const stamp = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, 'baocao_nenep_'+stamp+'.xlsx');
+  showAlert('success','Đã tạo file báo cáo, kiểm tra thư mục Downloads.');
+}
+
+function openSettingsPanel(name){
+  el('settingsGridPanel').style.display = 'none';
+  ['pointRulesPanel','securityPanel','permissionsPanel','reportPanel'].forEach(id=>el(id).style.display='none');
+  if(name==='pointRules'){ el('pointRulesPanel').style.display='block'; loadPointRules(); }
+  if(name==='security'){ el('securityPanel').style.display='block'; loadSecuritySettings(); }
+  if(name==='permissions'){ el('permissionsPanel').style.display='block'; loadPermissionsMatrix(); }
+  if(name==='report'){ el('reportPanel').style.display='block'; el('reportFilterSummary').innerHTML = getActiveFilterSummaryHtml(); }
+}
+function closeSettingsPanel(){
+  ['pointRulesPanel','securityPanel','permissionsPanel','reportPanel'].forEach(id=>el(id).style.display='none');
+  el('settingsGridPanel').style.display='block';
+}
+
+const RULE_TYPE_LABELS = {khen:'Điểm cộng', nenep:'Nề nếp', bantru:'Bán trú'};
+
+async function loadPointRules(){
+  try{
+    const data = await apiJson('/api/point-rules');
+    APP.pointRules = data.rules || [];
+    renderPointRulesTable();
+  }catch(e){
+    showAlert('error', esc(e.message || 'Không tải được danh sách quy tắc'));
+  }
+}
+function renderPointRulesTable(){
+  const rows = (APP.pointRules||[]).map((r,i)=>[
+    i+1,
+    esc(r.keyword),
+    '<b style="color:'+(r.point>=0?'var(--fpt-green)':'var(--red)')+'">'+(r.point>0?'+':'')+r.point+'</b>',
+    RULE_TYPE_LABELS[r.rule_type]||esc(r.rule_type),
+    esc(r.note||''),
+    r.is_active ? '<span class="badge badge-ok">Đang dùng</span>' : '<span class="badge badge-err">Đã tắt</span>',
+    '<div style="display:flex;gap:6px">'
+      +'<button class="btn btn-secondary btn-sm" onclick="openEditPointRuleModal('+r.id+')"><i class="ti ti-pencil"></i></button>'
+      +(r.is_active?'<button class="btn btn-danger btn-sm" onclick="deactivatePointRule('+r.id+')"><i class="ti ti-ban"></i></button>':'')
+    +'</div>'
+  ]);
+  mkTable('pointRulesTable', ['STT','Lỗi / Nội dung','Điểm','Loại','Ghi chú','Trạng thái',''], rows);
+}
+function pointRuleFormHtml(rule={}){
+  const type = rule.rule_type || 'nenep';
+  const active = rule.is_active !== false;
+  return `
+    <div class="quick-form" style="grid-template-columns:1fr;gap:12px">
+      <div class="field">
+        <label>Nội dung lỗi / khen thưởng</label>
+        <input id="prKeyword" value="${esc(rule.keyword||'')}" placeholder="Ví dụ: Đi học muộn">
+      </div>
+      <div class="field">
+        <label>Điểm (âm là trừ, dương là cộng)</label>
+        <input id="prPoint" type="number" step="1" value="${rule.point!=null?rule.point:''}" placeholder="Ví dụ: -5">
+      </div>
+      <div class="field">
+        <label>Loại</label>
+        <select id="prType">
+          ${Object.entries(RULE_TYPE_LABELS).map(([k,v])=>`<option value="${k}" ${k===type?'selected':''}>${v}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label>Ghi chú</label>
+        <input id="prNote" value="${esc(rule.note||'')}" placeholder="Không bắt buộc">
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text)">
+        <input id="prActive" type="checkbox" ${active?'checked':''}> Đang áp dụng
+      </label>
+    </div>`;
+}
+function collectPointRuleForm(){
+  const keyword = el('prKeyword')?.value.trim() || '';
+  const pointStr = el('prPoint')?.value ?? '';
+  if(!keyword) throw new Error('Vui lòng nhập nội dung lỗi/khen thưởng');
+  if(pointStr === '' || isNaN(Number(pointStr))) throw new Error('Vui lòng nhập điểm hợp lệ');
+  return {
+    keyword,
+    point: Number(pointStr),
+    rule_type: el('prType')?.value || 'nenep',
+    note: el('prNote')?.value.trim() || '',
+    is_active: !!el('prActive')?.checked
+  };
+}
+async function openCreatePointRuleModal(){
+  const ok = await showModal({title:'Thêm quy tắc điểm', icon:'plus', body:pointRuleFormHtml(), confirmText:'Tạo', cancelText:'Hủy'});
+  if(!ok) return;
+  try{
+    const payload = collectPointRuleForm();
+    showLoading('Đang tạo quy tắc…');
+    await apiJson('/api/point-rules', {method:'POST', body:JSON.stringify(payload)});
+    showAlert('success','Đã tạo quy tắc.');
+    await loadPointRules();
+  }catch(e){
+    showAlert('error', esc(e.message || 'Không tạo được quy tắc'));
+  }finally{
+    hideLoading();
+  }
+}
+async function openEditPointRuleModal(ruleId){
+  const rule = (APP.pointRules||[]).find(r=>Number(r.id)===Number(ruleId));
+  if(!rule) return showAlert('error','Không tìm thấy quy tắc.');
+  const ok = await showModal({title:'Sửa quy tắc điểm', icon:'pencil', body:pointRuleFormHtml(rule), confirmText:'Lưu', cancelText:'Hủy'});
+  if(!ok) return;
+  try{
+    const payload = collectPointRuleForm();
+    showLoading('Đang cập nhật quy tắc…');
+    await apiJson('/api/point-rules/'+encodeURIComponent(ruleId), {method:'PUT', body:JSON.stringify(payload)});
+    showAlert('success','Đã cập nhật quy tắc.');
+    await loadPointRules();
+  }catch(e){
+    showAlert('error', esc(e.message || 'Không cập nhật được quy tắc'));
+  }finally{
+    hideLoading();
+  }
+}
+async function deactivatePointRule(ruleId){
+  const rule = (APP.pointRules||[]).find(r=>Number(r.id)===Number(ruleId));
+  if(!rule) return;
+  const ok = await showModal({
+    title:'Vô hiệu hoá quy tắc',
+    icon:'alert-triangle',
+    body:'Vô hiệu hoá quy tắc <strong>'+esc(rule.keyword)+'</strong>? Quy tắc sẽ không còn được dùng để chấm điểm các file upload sau này (dữ liệu cũ không đổi).',
+    confirmText:'Vô hiệu hoá',
+    cancelText:'Hủy'
+  });
+  if(!ok) return;
+  try{
+    showLoading('Đang cập nhật…');
+    await apiJson('/api/point-rules/'+encodeURIComponent(ruleId), {method:'DELETE'});
+    showAlert('success','Đã vô hiệu hoá quy tắc.');
+    await loadPointRules();
+  }catch(e){
+    showAlert('error', esc(e.message || 'Không thực hiện được'));
+  }finally{
+    hideLoading();
+  }
+}
+
+async function loadSecuritySettings(){
+  try{
+    const data = await apiJson('/api/settings/security');
+    el('securityInfoBox').innerHTML = `
+      <div class="setting-card"><h4>Ngưỡng yêu cầu mật khẩu ghi đè</h4><p>${data.override_threshold_hours} giờ sau khi file được upload — sau mốc này, chỉnh sửa/ghi đè dữ liệu cần nhập mật khẩu xác nhận (trừ tài khoản Admin).</p></div>
+      <div class="setting-card"><h4>Mật khẩu ghi đè</h4><p>${data.override_password_configured ? '<span class="badge badge-ok">Đã cấu hình</span> trên biến môi trường server.' : '<span class="badge badge-err">Chưa cấu hình</span> — hiện không ai bị chặn ghi đè sau 24h.'}</p></div>
+    `;
+  }catch(e){
+    el('securityInfoBox').innerHTML = '<div class="setting-card"><h4>Lỗi</h4><p>'+esc(e.message||'Không tải được cấu hình')+'</p></div>';
+  }
+}
+async function loadPermissionsMatrix(){
+  try{
+    const data = await apiJson('/api/settings/permissions');
+    const rows = (data.roles||[]).map(r=>[
+      '<b>'+esc(r.label)+'</b>',
+      esc(r.scope),
+      r.can_delete_file ? '<span class="badge badge-ok">Có</span>' : '<span class="badge badge-err">Không</span>',
+      r.can_manage_users ? '<span class="badge badge-ok">Có</span>' : '<span class="badge badge-err">Không</span>',
+      esc(r.override_after_24h)
+    ]);
+    mkTable('permissionsTable', ['Vai trò','Phạm vi dữ liệu','Xoá file','Quản lý người dùng','Ghi đè sau 24h'], rows);
+  }catch(e){
+    el('permissionsTable').innerHTML = '<div class="empty-state"><p>'+esc(e.message||'Không tải được dữ liệu')+'</p></div>';
+  }
+}
 
 // ── EXPORT ──
 function exportCSV(){if(!APP.allRows.length)return;const h=['Ngày','Tuần','Tháng','Cấp','Khối','Lớp','Mã HS','Họ tên','Lỗi','Phân loại','Điểm','Ghi chú','File'],k=['dateLabel','week','month','level','grade','className','studentId','studentName','issue','category','point','note','sourceFile'];const csv='\uFEFF'+[h.map(csvC).join(','),...APP.allRows.map(r=>k.map(x=>csvC(r[x])).join(','))].join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download='thidua_chitiet.csv';a.click()}
