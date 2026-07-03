@@ -3103,22 +3103,41 @@ async function loadPointRules(){
     renderPointRulesTable();
   }catch(e){
     showAlert('error', esc(e.message || 'Không tải được danh sách quy tắc'));
+    el('pointRulesTable').innerHTML = '<div class="empty-state"><div class="icon"><i class="ti ti-alert-triangle"></i></div><p>Lỗi tải dữ liệu: '+esc(e.message||'không rõ nguyên nhân')+'</p></div>';
   }
 }
+const RULE_TYPE_COLOR = {khen:'var(--fpt-green-light)', nenep:'var(--fpt-orange-light)', bantru:'var(--fpt-blue-light)'};
 function renderPointRulesTable(){
-  const rows = (APP.pointRules||[]).map((r,i)=>[
-    i+1,
-    esc(r.keyword),
-    '<b style="color:'+(r.point>=0?'var(--fpt-green)':'var(--red)')+'">'+(r.point>0?'+':'')+r.point+'</b>',
-    RULE_TYPE_LABELS[r.rule_type]||esc(r.rule_type),
-    esc(r.note||''),
-    r.is_active ? '<span class="badge badge-ok">Đang dùng</span>' : '<span class="badge badge-err">Đã tắt</span>',
-    '<div style="display:flex;gap:6px">'
-      +'<button class="btn btn-secondary btn-sm" onclick="openEditPointRuleModal('+r.id+')"><i class="ti ti-pencil"></i></button>'
-      +(r.is_active?'<button class="btn btn-danger btn-sm" onclick="deactivatePointRule('+r.id+')"><i class="ti ti-ban"></i></button>':'')
-    +'</div>'
-  ]);
-  mkTable('pointRulesTable', ['STT','Lỗi / Nội dung','Điểm','Loại','Ghi chú','Trạng thái',''], rows);
+  const wrap = el('pointRulesTable');
+  const rules = APP.pointRules || [];
+  if(!rules.length){
+    wrap.innerHTML = '<div class="empty-state"><div class="icon"><i class="ti ti-database-off"></i></div><p>Không có dữ liệu</p></div>';
+    return;
+  }
+  let html = '<table><thead><tr><th style="width:50px">STT</th><th>Lỗi / Nội dung</th><th style="width:80px">Điểm</th><th style="width:110px">Ghi chú</th><th style="width:100px">Trạng thái</th><th style="width:90px"></th></tr></thead><tbody>';
+  let lastType = null, stt = 0;
+  rules.forEach(r=>{
+    if(r.rule_type !== lastType){
+      lastType = r.rule_type;
+      html += '<tr style="background:'+(RULE_TYPE_COLOR[r.rule_type]||'transparent')+'"><td colspan="6"><b>'+(RULE_TYPE_LABELS[r.rule_type]||esc(r.rule_type))+'</b></td></tr>';
+    }
+    stt++;
+    const bg = r.is_active ? (RULE_TYPE_COLOR[r.rule_type]||'transparent') : 'transparent';
+    const opacity = r.is_active ? '' : 'opacity:.5';
+    html += '<tr style="background:'+bg+';'+opacity+'">'
+      + '<td>'+stt+'</td>'
+      + '<td>'+esc(r.keyword)+'</td>'
+      + '<td><b style="color:'+(r.point>=0?'var(--fpt-green)':'var(--red)')+'">'+(r.point>0?'+':'')+r.point+'</b></td>'
+      + '<td>'+esc(r.note||'')+'</td>'
+      + '<td>'+(r.is_active?'<span class="badge badge-ok">Đang dùng</span>':'<span class="badge badge-err">Đã tắt</span>')+'</td>'
+      + '<td><div style="display:flex;gap:6px">'
+        + '<button class="btn btn-secondary btn-sm" onclick="openEditPointRuleModal('+r.id+')"><i class="ti ti-pencil"></i></button>'
+        + (r.is_active?'<button class="btn btn-danger btn-sm" onclick="deactivatePointRule('+r.id+')"><i class="ti ti-ban"></i></button>':'')
+      + '</div></td>'
+      + '</tr>';
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
 }
 function pointRuleFormHtml(rule={}){
   const type = rule.rule_type || 'nenep';
