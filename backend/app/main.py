@@ -493,14 +493,14 @@ def save_rows_to_db(
 
         file_id = cur.lastrowid
 
-    for r in rows:
-        cur.execute("""
-            INSERT INTO discipline_records
-            (date, date_label, week, month, level, grade, class_name,
-             student_id, student_name, issue, category, point, note,
-             source_file, source_sheet, is_violation, file_id, folder)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-        """, (
+    cur.executemany("""
+        INSERT INTO discipline_records
+        (date, date_label, week, month, level, grade, class_name,
+         student_id, student_name, issue, category, point, note,
+         source_file, source_sheet, is_violation, file_id, folder)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    """, [
+        (
             r.get("date"),
             r.get("date_label"),
             r.get("week"),
@@ -519,7 +519,9 @@ def save_rows_to_db(
             r.get("is_violation"),
             file_id,
             r.get("folder", folder)
-        ))
+        )
+        for r in rows
+    ])
 
     cur.execute("""
         INSERT INTO upload_audit_logs

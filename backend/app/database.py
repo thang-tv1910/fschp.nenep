@@ -78,6 +78,9 @@ _DATETIME_NOW_RE = re.compile(r"datetime\(\s*'now'\s*\)", re.IGNORECASE)
 _PRAGMA_RE = re.compile(r"PRAGMA\s+table_info\((\w+)\)", re.IGNORECASE)
 
 
+_VALUES_RE = re.compile(r"VALUES\s*\(\s*%s(?:\s*,\s*%s)*\s*\)", re.IGNORECASE)
+
+
 def _translate(sql: str) -> str:
     sql = _DATETIME_NOW_RE.sub("NOW()", sql)
     sql = re.sub(r"\buser\b", '"user"', sql)  # "user" is a reserved word in Postgres
@@ -126,7 +129,16 @@ class PGCursor:
         return self
 
     def executemany(self, sql, seq_of_params):
-        self._cur.executemany(_translate(sql), seq_of_params)
+        pg_sql = _translate(sql)
+        seq_of_params = list(seq_of_params)
+        m = _VALUES_RE.search(pg_sql)
+        if _INSERT_RE.match(pg_sql) and m and seq_of_params:
+            template_sql = pg_sql[:m.start()] + "VALUES %s" + pg_sql[m.end():]
+            psycopg2.extras.execute_values(self._cur, template_sql, seq_of_params, page_size=500)
+            self._insert_happened = True
+        else:
+            self._cur.executemany(pg_sql, seq_of_params)
+            self._insert_happened = bool(_INSERT_RE.match(pg_sql))
         return self
 
     def fetchone(self):
