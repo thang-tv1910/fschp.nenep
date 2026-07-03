@@ -1923,12 +1923,28 @@ tbody tr:hover {
       <button class="btn btn-secondary btn-sm" onclick="closeSettingsPanel()" style="margin-bottom:8px"><i class="ti ti-arrow-left"></i>Quay lại</button>
       <h3 style="margin:0">Xuất báo cáo Excel</h3>
       <p style="margin:12px 0;color:var(--text-muted);font-size:13px;max-width:640px">
-        Báo cáo sẽ xuất đúng theo <strong>bộ lọc đang chọn</strong> ở đầu trang (Tháng/Tuần/Khối/Lớp...).
-        Muốn đổi phạm vi thời gian, quay lại tab Tổng quan chỉnh bộ lọc rồi vào lại đây.
+        Chọn phạm vi thời gian và nội dung muốn đưa vào báo cáo — không cần rời trang này.
       </p>
+
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px">
+        <div class="field" style="min-width:200px">
+          <label style="font-size:11px;text-transform:uppercase;color:var(--text-muted);font-weight:700;display:block;margin-bottom:6px">Tháng</label>
+          <select id="repMonth" onchange="updateReportWeekOptions()" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:#F8FAFC"></select>
+        </div>
+        <div class="field" style="min-width:200px">
+          <label style="font-size:11px;text-transform:uppercase;color:var(--text-muted);font-weight:700;display:block;margin-bottom:6px">Tuần</label>
+          <select id="repWeek" onchange="updateReportSummaryText()" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:#F8FAFC"></select>
+        </div>
+      </div>
       <div id="reportFilterSummary" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:var(--text)"></div>
 
-      <h4 style="margin:0 0 10px">Chọn nội dung đưa vào báo cáo</h4>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <h4 style="margin:0">Chọn nội dung đưa vào báo cáo</h4>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary btn-sm" type="button" onclick="toggleAllReportSections(true)">Chọn tất cả</button>
+          <button class="btn btn-secondary btn-sm" type="button" onclick="toggleAllReportSections(false)">Bỏ chọn</button>
+        </div>
+      </div>
       <div class="quick-form" style="grid-template-columns:1fr;gap:10px;margin-bottom:20px">
         <label style="display:flex;align-items:center;gap:8px;font-size:14px;text-transform:none;letter-spacing:normal;font-weight:400"><input type="checkbox" id="repSecOverview" style="width:auto" checked> Tổng quan (điểm sức khỏe, tổng điểm, lượt vi phạm...)</label>
         <label style="display:flex;align-items:center;gap:8px;font-size:14px;text-transform:none;letter-spacing:normal;font-weight:400"><input type="checkbox" id="repSecRanking" style="width:auto" checked> Bảng xếp hạng lớp</label>
@@ -3006,22 +3022,53 @@ async function lockUser(userId){
 
 
 // ── SETTINGS PANELS ──
-const FILTER_LABELS = {month:'Tháng',week:'Tuần',level:'Cấp học',grade:'Khối',className:'Lớp',category:'Phân loại',issue:'Lỗi'};
-function getActiveFilterSummaryHtml(){
-  const parts = FK.map(k=>{
-    const v = el('f_'+k)?.value || '';
-    return v ? (FILTER_LABELS[k]+': <b>'+esc(v)+'</b>') : null;
-  }).filter(Boolean);
-  return parts.length ? parts.join(' &nbsp;·&nbsp; ') : 'Không lọc gì — báo cáo sẽ gồm <b>toàn bộ dữ liệu</b> hiện có.';
+function toggleAllReportSections(val){
+  ['repSecOverview','repSecRanking','repSecIssues','repSecDaily','repSecDetail'].forEach(id=>{ if(el(id)) el(id).checked = val; });
+}
+function populateReportTimeRange(){
+  const months = [...new Set((APP.allRows||[]).map(r=>r.month).filter(Boolean))].sort(monthSort);
+  el('repMonth').innerHTML = '<option value="">Tất cả tháng</option>'+months.map(m=>'<option value="'+esc(m)+'">'+esc(m)+'</option>').join('');
+  updateReportWeekOptions();
+}
+function updateReportWeekOptions(){
+  const month = el('repMonth')?.value || '';
+  const source = month ? (APP.allRows||[]).filter(r=>r.month===month) : (APP.allRows||[]);
+  const weeks = [...new Set(source.map(r=>r.week).filter(Boolean))].sort((a,b)=>weekNum(a)-weekNum(b));
+  el('repWeek').innerHTML = '<option value="">Tất cả tuần</option>'+weeks.map(w=>'<option value="'+esc(w)+'">'+esc(w)+'</option>').join('');
+  updateReportSummaryText();
+}
+function getReportScopedRows(){
+  const month = el('repMonth')?.value || '';
+  const week = el('repWeek')?.value || '';
+  return (APP.allRows||[]).filter(r => (!month || r.month===month) && (!week || r.week===week));
+}
+function updateReportSummaryText(){
+  const rows = getReportScopedRows();
+  const monthLabel = el('repMonth')?.value || 'Tất cả tháng';
+  const weekLabel = el('repWeek')?.value || 'Tất cả tuần';
+  el('reportFilterSummary').innerHTML = '<b>'+esc(monthLabel)+'</b> &nbsp;·&nbsp; <b>'+esc(weekLabel)+'</b> &nbsp;—&nbsp; '+rows.length+' lượt ghi nhận trong phạm vi này.';
 }
 function generateExcelReport(){
   if(typeof XLSX === 'undefined') return showAlert('error','Thư viện xuất Excel chưa tải xong, thử lại sau vài giây.');
-  const s = APP.currentSummary || {};
+  const filtered = getReportScopedRows();
+  if(!filtered.length) return showAlert('error','Không có dữ liệu trong phạm vi đã chọn.');
+  const officialFiltered = filtered.filter(isOfficialClassRow);
+  const ranking = buildRanking(officialFiltered);
+  const issues = buildIssues(filtered);
+  const daily = buildDaily(filtered);
+  const s = buildSummary(filtered, ranking, officialFiltered);
+  const monthLabel = el('repMonth')?.value || 'Tất cả tháng';
+  const weekLabel = el('repWeek')?.value || 'Tất cả tuần';
+
   const wb = XLSX.utils.book_new();
   let sheetCount = 0;
 
   if(el('repSecOverview')?.checked){
     const data = [
+      ['Báo cáo nề nếp — FPT School Hải Phòng', ''],
+      ['Phạm vi', monthLabel+' · '+weekLabel],
+      ['Ngày xuất', new Date().toLocaleString('vi-VN')],
+      ['', ''],
       ['Chỉ số','Giá trị'],
       ['Tổng điểm', s.totalScore ?? 0],
       ['Điểm cộng', s.totalPlus ?? 0],
@@ -3033,12 +3080,11 @@ function generateExcelReport(){
       ['Lớp cần hỗ trợ', s.warningClass ?? '—'],
     ];
     const ws = XLSX.utils.aoa_to_sheet(data);
-    ws['!cols'] = [{wch:24},{wch:18}];
+    ws['!cols'] = [{wch:28},{wch:22}];
     XLSX.utils.book_append_sheet(wb, ws, 'Tổng quan');
     sheetCount++;
   }
   if(el('repSecRanking')?.checked){
-    const ranking = (APP.pendingChartData && APP.pendingChartData.ranking) || [];
     const data = [['Hạng','Lớp','Cấp','Khối','Điểm','Điểm cộng','Điểm trừ','Số lượt vi phạm','Số HS'],
       ...ranking.map(r=>[r.rank,r.className,r.level,r.grade,r.score,r.plus,r.minus,r.issueCount,r.studentCount])];
     const ws = XLSX.utils.aoa_to_sheet(data);
@@ -3047,7 +3093,6 @@ function generateExcelReport(){
     sheetCount++;
   }
   if(el('repSecIssues')?.checked){
-    const issues = (APP.pendingChartData && APP.pendingChartData.issues) || [];
     const data = [['Lỗi / Nội dung','Phân loại','Số lần','Tổng điểm trừ','Tổng điểm'],
       ...issues.map(x=>[x.issue,x.category,x.count,x.minus,x.score])];
     const ws = XLSX.utils.aoa_to_sheet(data);
@@ -3056,7 +3101,6 @@ function generateExcelReport(){
     sheetCount++;
   }
   if(el('repSecDaily')?.checked){
-    const daily = (APP.pendingChartData && APP.pendingChartData.daily) || [];
     const data = [['Ngày','Điểm cộng','Điểm trừ','Tổng điểm','Số lượt vi phạm'],
       ...daily.map(x=>[x.date,x.plus,x.minus,x.score,x.count])];
     const ws = XLSX.utils.aoa_to_sheet(data);
@@ -3065,9 +3109,8 @@ function generateExcelReport(){
     sheetCount++;
   }
   if(el('repSecDetail')?.checked){
-    const rows = APP.filteredDetailRows || [];
     const data = [['Ngày','Tuần','Tháng','Cấp','Khối','Lớp','Mã HS','Họ tên','Lỗi','Phân loại','Điểm','Ghi chú','File nguồn'],
-      ...rows.map(r=>[r.dateLabel,r.week,r.month,r.level,r.grade,r.className,r.studentId,r.studentName,r.issue,r.category,r.point,r.note,r.sourceFile])];
+      ...filtered.map(r=>[r.dateLabel,r.week,r.month,r.level,r.grade,r.className,r.studentId,r.studentName,r.issue,r.category,r.point,r.note,r.sourceFile])];
     const ws = XLSX.utils.aoa_to_sheet(data);
     ws['!cols'] = [{wch:12},{wch:8},{wch:10},{wch:8},{wch:8},{wch:10},{wch:12},{wch:20},{wch:40},{wch:14},{wch:8},{wch:24},{wch:20}];
     XLSX.utils.book_append_sheet(wb, ws, 'Chi tiết');
@@ -3087,7 +3130,7 @@ function openSettingsPanel(name){
   if(name==='pointRules'){ el('pointRulesPanel').style.display='block'; loadPointRules(); }
   if(name==='security'){ el('securityPanel').style.display='block'; loadSecuritySettings(); }
   if(name==='permissions'){ el('permissionsPanel').style.display='block'; loadPermissionsMatrix(); }
-  if(name==='report'){ el('reportPanel').style.display='block'; el('reportFilterSummary').innerHTML = getActiveFilterSummaryHtml(); }
+  if(name==='report'){ el('reportPanel').style.display='block'; populateReportTimeRange(); }
 }
 function closeSettingsPanel(){
   ['pointRulesPanel','securityPanel','permissionsPanel','reportPanel'].forEach(id=>el(id).style.display='none');
