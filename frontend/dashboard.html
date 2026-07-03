@@ -2094,8 +2094,8 @@ function buildTabs(){
     admin:['overview','detail','admin','ranking','analysis','audit','users'],
     bangiamhieu:['overview','detail','ranking','analysis','audit'],
     quanly:['overview','detail','admin','ranking','analysis','audit'],
-    giamthi:['overview','admin','detail','analysis'],
-    bantru:['overview','admin','detail','analysis']
+    giamthi:['overview','admin','detail','ranking','analysis'],
+    bantru:['overview','admin','detail','ranking','analysis']
   };
   let allowed = roleMenus[role] || (APP.perms?.tabs || ['overview','daily','detail']);
   allowed = allowed.filter(id => id !== 'issues' && id !== 'warning' && id !== 'trend' && id !== 'daily' && id !== 'settings'); // giữ sidebar không có tab Cài đặt phía trên
