@@ -1746,6 +1746,21 @@ tbody tr:hover {
   </div>
 
   <section id="tab_overview" class="tab-content active">
+    <div class="panel" style="margin-bottom:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <h3 style="margin:0"><i class="ti ti-clipboard-check"></i> Sĩ số hôm nay</h3>
+        <div style="display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-variant-numeric:tabular-nums">
+          <span id="ovClockDate" style="color:var(--text-muted);font-size:12.5px"></span>
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--fpt-green);display:inline-block"></span>
+          <span id="ovClockTime" style="font-weight:700;font-size:14px"></span>
+        </div>
+      </div>
+      <div class="setting-grid">
+        <div class="setting-card"><h4 id="ovAttPresent" style="color:var(--fpt-green)">—</h4><p>Có mặt / <span id="ovAttTotal">—</span> học sinh</p></div>
+        <div class="setting-card" style="background:var(--fpt-orange-light)"><h4 id="ovAttExcused" style="color:var(--fpt-orange)">—</h4><p>Vắng có phép</p></div>
+        <div class="setting-card" style="background:var(--red-light)"><h4 id="ovAttUnexcused" style="color:var(--red)">—</h4><p>Vắng không phép</p></div>
+      </div>
+    </div>
     <div class="grid-2">
       <div class="panel"><h3>Top lớp theo điểm thi đua</h3><div class="chart-box"><canvas id="chartTopClass"></canvas></div></div>
       <div class="panel"><h3>Cơ cấu theo phân loại</h3><div class="chart-box"><canvas id="chartCategory"></canvas></div></div>
@@ -1852,7 +1867,44 @@ tbody tr:hover {
     </div>
   </section>
 
-  <section id="tab_audit" class="tab-content">
+  <section id="tab_attendance" class="tab-content">
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:10px">
+        <h3 style="margin:0">Điểm danh — <span id="attDateLabel"></span></h3>
+        <input type="date" id="attDate" onchange="loadAttendanceForDate()">
+      </div>
+      <p style="margin:4px 0 16px;color:var(--text-muted);font-size:13px">Mặc định tất cả học sinh <b>Có mặt</b>. Chỉ cần đánh dấu ai vắng.</p>
+
+      <div class="setting-grid" style="margin-bottom:20px">
+        <div class="setting-card" style="cursor:pointer" id="attKpiCardPresent" onclick="setAttFilter('all')"><h4 id="attKpiTotal">0</h4><p>Tổng số học sinh</p></div>
+        <div class="setting-card" style="cursor:pointer;background:var(--fpt-green-light)" onclick="setAttFilter('all')"><h4 id="attKpiPresent" style="color:var(--fpt-green)">0</h4><p>Có mặt</p></div>
+        <div class="setting-card" style="cursor:pointer;background:var(--fpt-orange-light)" id="attKpiCardExcused" onclick="setAttFilter('excused')"><h4 id="attKpiExcused" style="color:var(--fpt-orange)">0</h4><p>Vắng có phép — bấm để lọc</p></div>
+        <div class="setting-card" style="cursor:pointer;background:var(--red-light)" id="attKpiCardUnexcused" onclick="setAttFilter('unexcused')"><h4 id="attKpiUnexcused" style="color:var(--red)">0</h4><p>Vắng không phép — bấm để lọc</p></div>
+      </div>
+
+      <div id="attLockNotice" style="display:none;background:#FFF7ED;border:1px solid #FED7AA;color:#9A3412;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px"></div>
+
+      <h4 style="margin:0 0 10px">Đánh dấu vắng nhanh</h4>
+      <div style="position:relative;margin-bottom:16px">
+        <input type="search" id="attSearchBox" placeholder="Gõ tên hoặc mã học sinh..." oninput="renderAttSearch()" onfocus="renderAttSearch()"
+          style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);font-family:inherit;font-size:14px">
+        <div id="attSearchResults" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:10px;margin-top:6px;box-shadow:0 8px 24px rgba(0,0,0,.08);z-index:5;max-height:280px;overflow-y:auto"></div>
+      </div>
+
+      <div id="attListHeader" style="font-size:13px;color:var(--text-muted);margin-bottom:8px;font-weight:600"></div>
+      <div id="attAbsentList"></div>
+
+      <div style="margin:22px 0 14px;border-top:1px solid var(--border)"></div>
+      <h4 style="margin:0 0 10px">Kiểm tra theo lớp (không bắt buộc)</h4>
+      <div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+        <select id="attKhoiSelect" onchange="onAttKhoiChange()" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);min-width:140px"></select>
+        <select id="attLopSelect" onchange="renderAttRoster()" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);min-width:140px"></select>
+      </div>
+      <div id="attRosterGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-bottom:20px"></div>
+
+      <button class="btn btn-primary" onclick="saveAttendance()"><i class="ti ti-device-floppy"></i>Lưu điểm danh</button>
+    </div>
+  </section>
     <div class="panel">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap">
         <h3 style="margin:0">Lịch sử chỉnh sửa dữ liệu</h3>
@@ -1985,7 +2037,7 @@ function monthSort(a,b){
   return String(a).localeCompare(String(b),'vi');
 }
 
-const TAB_ICONS = {overview:'layout-dashboard',detail:'database',admin:'clipboard-plus',audit:'history',ranking:'trophy',analysis:'alert-triangle',users:'users',settings:'settings'};
+const TAB_ICONS = {overview:'layout-dashboard',detail:'database',admin:'clipboard-plus',attendance:'clipboard-check',audit:'history',ranking:'trophy',analysis:'alert-triangle',users:'users',settings:'settings'};
 const ICON_PATHS = {
   circle:'<circle cx="12" cy="12" r="8"/>',
   settings:'<path d="M12 8a4 4 0 1 0 0 8a4 4 0 0 0 0-8z"/><path d="M4 12h2m12 0h2M12 4v2m0 12v2M6.5 6.5l1.4 1.4m8.2 8.2l1.4 1.4m0-11l-1.4 1.4m-8.2 8.2l-1.4 1.4"/>',
@@ -2046,6 +2098,8 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     buildTabs();
     initDragDrop();
     fetchData();
+    startOverviewClock();
+    loadOverviewAttendanceSummary();
     if (APP.perms?.can_manage_users) loadUsers();
   } catch(e){ doLogout() }
 });
@@ -2083,6 +2137,7 @@ function buildTabs(){
     overview:'Tổng quan',
     detail:'Dữ liệu nề nếp',
     admin:'Ghi nhận nề nếp',
+    attendance:'Điểm danh',
     audit:'Lịch sử chỉnh sửa',
     ranking:'Xếp hạng & Thi đua',
     analysis:'Phân tích lỗi & Cảnh báo',
@@ -2091,11 +2146,11 @@ function buildTabs(){
   };
   const role = APP.user?.role || '';
   const roleMenus = {
-    admin:['overview','detail','admin','ranking','analysis','audit','users'],
+    admin:['overview','detail','admin','attendance','ranking','analysis','audit','users'],
     bangiamhieu:['overview','detail','ranking','analysis','audit'],
-    quanly:['overview','detail','admin','ranking','analysis','audit'],
-    giamthi:['overview','admin','detail','ranking','analysis'],
-    bantru:['overview','admin','detail','ranking','analysis']
+    quanly:['overview','detail','admin','attendance','ranking','analysis','audit'],
+    giamthi:['overview','admin','attendance','detail','ranking','analysis'],
+    bantru:['overview','admin','attendance','detail','ranking','analysis']
   };
   let allowed = roleMenus[role] || (APP.perms?.tabs || ['overview','daily','detail']);
   allowed = allowed.filter(id => id !== 'issues' && id !== 'warning' && id !== 'trend' && id !== 'daily' && id !== 'settings'); // giữ sidebar không có tab Cài đặt phía trên
@@ -2127,6 +2182,7 @@ function switchTab(tid){
     overview:['Tổng quan','Bức tranh tổng thể về sức khỏe nề nếp toàn trường.'],
     detail:['Dữ liệu nề nếp','Tra cứu chuyên sâu theo học sinh, lớp, khối, lỗi và nguồn dữ liệu.'],
     admin:['Ghi nhận nề nếp','Nhập nhanh từng tình huống hoặc import file Excel hàng loạt.'],
+    attendance:['Điểm danh','Theo dõi và ghi nhận sĩ số học sinh hàng ngày.'],
     audit:['Lịch sử chỉnh sửa','Theo dõi upload, ghi đè, xóa file và lý do thay đổi dữ liệu.'],
     ranking:['Xếp hạng & Thi đua','Bảng thi đua phục vụ chào cờ, khen thưởng và theo dõi từng khối.'],
     analysis:['Phân tích lỗi & Cảnh báo','Nhận diện lỗi phổ biến, học sinh/lớp chạm ngưỡng cần hỗ trợ.'],
@@ -2134,8 +2190,9 @@ function switchTab(tid){
     settings:['Cài đặt','Thiết lập quy tắc điểm, bảo mật và cấu hình vận hành.']
   };
   if(el('pageTitle') && titles[tid]){ el('pageTitle').textContent=titles[tid][0]; el('pageDesc').textContent=titles[tid][1]; }
-  el('filtersSection').style.display = (tid==='admin'||tid==='audit'||tid==='users'||tid==='settings')?'none':'';
+  el('filtersSection').style.display = (tid==='admin'||tid==='attendance'||tid==='audit'||tid==='users'||tid==='settings')?'none':'';
   if(tid==='admin'){ switchRecordSubtab('file', false); loadFiles(); populateQuickClassOptions(); }
+  if(tid==='attendance') loadAttendanceTab();
   if(tid==='audit') loadAuditLogs();
   if(tid==='users') renderUsersTable();
 
@@ -2147,6 +2204,7 @@ function switchTab(tid){
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
   if (tid === 'overview') {
+    loadOverviewAttendanceSummary();
     if (APP.chartsDirty && APP.pendingChartData) {
       renderCharts(APP.pendingChartData);
       APP.chartsDirty = false;
@@ -3021,6 +3079,212 @@ async function lockUser(userId){
 }
 
 
+// ── ATTENDANCE ──
+function vnTodayStr(){
+  const d = new Date(Date.now() + 7*3600*1000);
+  return d.toISOString().slice(0,10);
+}
+function startOverviewClock(){
+  function tick(){
+    const now = new Date();
+    if(el('ovClockDate')) el('ovClockDate').textContent = now.toLocaleDateString('vi-VN', {weekday:'short', day:'2-digit', month:'2-digit', year:'numeric'});
+    if(el('ovClockTime')) el('ovClockTime').textContent = now.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  }
+  tick();
+  setInterval(tick, 1000);
+  setInterval(loadOverviewAttendanceSummary, 60000);
+}
+async function loadOverviewAttendanceSummary(){
+  try{
+    const data = await apiJson('/api/attendance/summary?date='+vnTodayStr());
+    if(el('ovAttPresent')) el('ovAttPresent').textContent = data.present;
+    if(el('ovAttTotal')) el('ovAttTotal').textContent = data.total;
+    if(el('ovAttExcused')) el('ovAttExcused').textContent = data.excused;
+    if(el('ovAttUnexcused')) el('ovAttUnexcused').textContent = data.unexcused;
+  }catch(e){ /* silent: this widget is secondary, don't block the page with an error */ }
+}
+
+let ATT_ROSTER = [];
+const ATT_STATE = new Map(); // student_id -> {status, note}
+let ATT_FILTER = 'all';
+let ATT_LOCKED = false;
+
+async function loadAttendanceTab(){
+  if(!el('attDate').value) el('attDate').value = vnTodayStr();
+  el('attDateLabel').textContent = new Date(el('attDate').value+'T00:00:00').toLocaleDateString('vi-VN', {weekday:'long', day:'2-digit', month:'2-digit', year:'numeric'});
+  if(!ATT_ROSTER.length){
+    await loadAttendanceRoster();
+    const khois = [...new Set(ATT_ROSTER.map(s => (s.class_name.match(/^\d+/)||['?'])[0]))].sort((a,b)=>a-b);
+    el('attKhoiSelect').innerHTML = khois.map(k=>'<option value="'+k+'">Khối '+k+'</option>').join('');
+    onAttKhoiChange();
+  }
+  await loadAttendanceForDate();
+}
+async function loadAttendanceRoster(){
+  try{
+    const data = await apiJson('/api/attendance/roster');
+    ATT_ROSTER = data.students || [];
+  }catch(e){
+    showAlert('error', esc(e.message||'Không tải được danh sách học sinh'));
+  }
+}
+async function loadAttendanceForDate(){
+  const date = el('attDate').value;
+  el('attDateLabel').textContent = new Date(date+'T00:00:00').toLocaleDateString('vi-VN', {weekday:'long', day:'2-digit', month:'2-digit', year:'numeric'});
+  try{
+    const data = await apiJson('/api/attendance?date='+encodeURIComponent(date));
+    ATT_STATE.clear();
+    (data.records||[]).forEach(r=>{ if(r.status !== 'present') ATT_STATE.set(r.student_id, {status:r.status, note:r.note||''}); });
+    ATT_LOCKED = !!data.locked;
+    el('attLockNotice').style.display = ATT_LOCKED ? 'block' : 'none';
+    if(ATT_LOCKED) el('attLockNotice').innerHTML = '🔒 Ngày này đã qua — cần nhập mật khẩu ghi đè khi lưu thay đổi (trừ tài khoản Admin).';
+    ATT_FILTER = 'all';
+    renderAttAll();
+  }catch(e){
+    showAlert('error', esc(e.message||'Không tải được điểm danh ngày này'));
+  }
+}
+function setAttFilter(f){
+  ATT_FILTER = (ATT_FILTER === f) ? 'all' : f;
+  renderAttAll();
+}
+function renderAttSearch(){
+  const q = el('attSearchBox').value.trim().toLowerCase();
+  const box = el('attSearchResults');
+  if(!q){ box.style.display='none'; box.innerHTML=''; return; }
+  const matches = ATT_ROSTER.filter(s => !ATT_STATE.has(s.id) && (s.full_name.toLowerCase().includes(q) || String(s.id).includes(q))).slice(0,8);
+  if(!matches.length){
+    box.innerHTML = '<div style="padding:10px 14px;color:var(--text-muted);font-size:13px">Không tìm thấy / đã có trong danh sách vắng</div>';
+  } else {
+    box.innerHTML = matches.map(s => `
+      <div style="padding:10px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:13.5px" onmouseover="this.style.background='var(--fpt-orange-light)'" onmouseout="this.style.background=''" onclick="addAttAbsent(${s.id})">
+        <span>${esc(s.full_name)} <span style="color:var(--text-muted);font-size:11.5px">(${s.id})</span></span>
+        <span style="font-size:11.5px;color:var(--text-muted);background:var(--border-light);padding:2px 8px;border-radius:6px">${esc(s.class_name)}</span>
+      </div>`).join('');
+  }
+  box.style.display = 'block';
+}
+function addAttAbsent(id){
+  ATT_STATE.set(id, {status:'unexcused', note:''});
+  el('attSearchBox').value = '';
+  el('attSearchResults').style.display = 'none';
+  renderAttAll();
+}
+function removeAttAbsent(id){ ATT_STATE.delete(id); renderAttAll(); }
+function setAttAbsentStatus(id, status){ ATT_STATE.get(id).status = status; renderAttAll(); }
+function setAttAbsentNote(id, val){ if(ATT_STATE.has(id)) ATT_STATE.get(id).note = val; }
+
+function renderAttAbsentList(){
+  const header = el('attListHeader');
+  const wrap = el('attAbsentList');
+  let entries = [...ATT_STATE.entries()];
+  if(ATT_FILTER !== 'all') entries = entries.filter(([id,info]) => info.status === ATT_FILTER);
+
+  const filterLabel = ATT_FILTER==='excused' ? 'Vắng có phép' : ATT_FILTER==='unexcused' ? 'Vắng không phép' : 'Tất cả học sinh vắng';
+  header.textContent = `${filterLabel} — ${entries.length} học sinh${entries.length?' · nhóm theo Khối / Lớp':''}`;
+
+  if(!entries.length){
+    wrap.innerHTML = '<div class="empty-state"><div class="icon"><i class="ti ti-mood-smile"></i></div><p>Không có học sinh nào trong mục này.</p></div>';
+    return;
+  }
+  const byKhoi = {};
+  entries.forEach(([id, info])=>{
+    const s = ATT_ROSTER.find(x=>x.id===id);
+    if(!s) return;
+    const khoi = (s.class_name.match(/^\d+/)||['?'])[0];
+    byKhoi[khoi] = byKhoi[khoi] || {};
+    byKhoi[khoi][s.class_name] = byKhoi[khoi][s.class_name] || [];
+    byKhoi[khoi][s.class_name].push({s, info});
+  });
+  let html = '';
+  Object.keys(byKhoi).sort((a,b)=>a-b).forEach(khoi=>{
+    const khoiTotal = Object.values(byKhoi[khoi]).reduce((a,list)=>a+list.length,0);
+    html += `<div style="margin-bottom:16px"><div style="font-size:13px;font-weight:800;color:var(--fpt-orange);margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid var(--fpt-orange-light)">Khối ${esc(khoi)} — ${khoiTotal} học sinh vắng</div>`;
+    Object.keys(byKhoi[khoi]).sort().forEach(lop=>{
+      const list = byKhoi[khoi][lop];
+      html += `<div style="font-size:12px;font-weight:700;color:var(--text-muted);margin:10px 0 6px 4px">Lớp ${esc(lop)} (${list.length})</div>`;
+      list.forEach(({s, info})=>{
+        html += `
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--border-light);border-radius:10px;margin-bottom:8px;flex-wrap:wrap">
+            <div style="flex:1;min-width:180px"><div style="font-size:13.5px;font-weight:600">${esc(s.full_name)}</div><div style="font-size:11.5px;color:var(--text-muted)">Mã HS ${s.id}</div></div>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-sm ${info.status==='excused'?'btn-primary':'btn-secondary'}" style="${info.status==='excused'?'background:var(--fpt-orange);border-color:var(--fpt-orange)':''}" onclick="setAttAbsentStatus(${s.id},'excused')">Có phép</button>
+              <button class="btn btn-sm ${info.status==='unexcused'?'btn-danger':'btn-secondary'}" onclick="setAttAbsentStatus(${s.id},'unexcused')">Không phép</button>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="removeAttAbsent(${s.id})" title="Bỏ đánh dấu vắng"><i class="ti ti-x"></i></button>
+            <input style="flex-basis:100%;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-family:inherit;font-size:12.5px" placeholder="Ghi chú (không bắt buộc)..." value="${esc(info.note)}" oninput="setAttAbsentNote(${s.id}, this.value)">
+          </div>`;
+      });
+    });
+    html += `</div>`;
+  });
+  wrap.innerHTML = html;
+}
+function onAttKhoiChange(){
+  const khoi = el('attKhoiSelect').value;
+  const classes = [...new Set(ATT_ROSTER.filter(s=>s.class_name.startsWith(khoi)).map(s=>s.class_name))].sort();
+  el('attLopSelect').innerHTML = classes.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join('');
+  renderAttRoster();
+}
+function renderAttRoster(){
+  const lop = el('attLopSelect').value;
+  const grid = el('attRosterGrid');
+  const students = ATT_ROSTER.filter(s=>s.class_name===lop);
+  grid.innerHTML = students.map(s=>{
+    const isAbsent = ATT_STATE.has(s.id);
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border:1px solid ${isAbsent?'var(--red)':'var(--border)'};background:${isAbsent?'var(--red-light)':'#fff'};border-radius:8px;font-size:12.5px;cursor:pointer" onclick="${isAbsent?'removeAttAbsent('+s.id+')':'addAttAbsent('+s.id+')'}">
+      <span>${esc(s.full_name)}<br><span style="color:var(--text-muted);font-size:10.5px">${s.id}</span></span>
+      <span>${isAbsent?'✕':'○'}</span>
+    </div>`;
+  }).join('');
+}
+function renderAttKPIs(){
+  const total = ATT_ROSTER.length;
+  const absentCount = ATT_STATE.size;
+  let excused=0, unexcused=0;
+  ATT_STATE.forEach(v => v.status==='excused' ? excused++ : unexcused++);
+  el('attKpiTotal').textContent = total;
+  el('attKpiPresent').textContent = total - absentCount;
+  el('attKpiExcused').textContent = excused;
+  el('attKpiUnexcused').textContent = unexcused;
+  el('attKpiCardExcused').style.boxShadow = ATT_FILTER==='excused' ? '0 0 0 2px var(--fpt-orange)' : '';
+  el('attKpiCardUnexcused').style.boxShadow = ATT_FILTER==='unexcused' ? '0 0 0 2px var(--red)' : '';
+}
+function renderAttAll(){
+  renderAttAbsentList();
+  renderAttRoster();
+  renderAttKPIs();
+}
+async function saveAttendance(){
+  const date = el('attDate').value;
+  const records = [...ATT_STATE.entries()].map(([student_id, info]) => ({student_id, status: info.status, note: info.note||''}));
+
+  let overridePassword = '';
+  if(ATT_LOCKED){
+    overridePassword = await showModal({
+      title: 'Xác nhận bảo mật',
+      icon: 'lock',
+      body: 'Ngày điểm danh này đã qua — nhập mật khẩu xác nhận để lưu thay đổi:',
+      input: true,
+      inputType: 'password',
+      placeholder: 'Nhập mật khẩu',
+      confirmText: 'Xác nhận',
+      cancelText: 'Hủy'
+    });
+    if(!overridePassword) return showAlert('error','Thiếu mật khẩu xác nhận');
+  }
+
+  try{
+    showLoading('Đang lưu điểm danh…');
+    await apiJson('/api/attendance', {method:'POST', body:JSON.stringify({date, records, override_password: overridePassword})});
+    showAlert('success','Đã lưu điểm danh.');
+    loadOverviewAttendanceSummary();
+  }catch(e){
+    showAlert('error', esc(e.message||'Không lưu được điểm danh'));
+  }finally{
+    hideLoading();
+  }
+}
 // ── SETTINGS PANELS ──
 function toggleAllReportSections(val){
   ['repSecOverview','repSecRanking','repSecIssues','repSecDaily','repSecDetail'].forEach(id=>{ if(el(id)) el(id).checked = val; });

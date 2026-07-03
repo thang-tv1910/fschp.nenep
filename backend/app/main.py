@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from datetime import timedelta, datetime
 from pathlib import Path
+from typing import List
 import os
 import re
 import tempfile
@@ -66,6 +67,18 @@ class PointRuleRequest(BaseModel):
     rule_type: str = Field(min_length=1, max_length=40)
     note: str = Field(default="", max_length=200)
     is_active: bool = True
+
+
+class AttendanceRecordItem(BaseModel):
+    student_id: int
+    status: str = Field(pattern="^(present|excused|unexcused)$")
+    note: str = Field(default="", max_length=200)
+
+
+class AttendanceSaveRequest(BaseModel):
+    date: str = Field(min_length=10, max_length=10)
+    records: List[AttendanceRecordItem]
+    override_password: str = Field(default="", max_length=200)
 
 
 @app.on_event("startup")
@@ -1004,6 +1017,127 @@ def deactivate_point_rule(rule_id: int, current_user: dict = Depends(require_adm
         conn.execute("UPDATE point_rules SET is_active=0 WHERE id=?", (rule_id,))
         conn.commit()
         return {"message": "Đã vô hiệu hoá quy tắc"}
+    finally:
+        conn.close()
+
+
+ATTENDANCE_ROLES = {"admin", "quanly", "giamthi", "bantru"}  # bangiamhieu only sees the summary, not this tab
+
+
+def require_attendance_access(current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") not in ATTENDANCE_ROLES:
+        raise HTTPException(status_code=403, detail="Không có quyền truy cập điểm danh")
+    return current_user
+
+
+def attendance_requires_override(date_str: str, role: str) -> bool:
+    if role == "admin":
+        return False
+    try:
+        record_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+    except Exception:
+        return False
+    today = (datetime.utcnow() + timedelta(hours=7)).date()
+    return record_date < today
+
+
+@app.get("/api/attendance/roster")
+def get_attendance_roster(current_user: dict = Depends(require_attendance_access)):
+    conn = get_conn()
+    try:
+        rows = conn.execute("""
+            SELECT id, full_name, class_name
+            FROM students
+            WHERE is_active=1
+            ORDER BY class_name, full_name
+        """).fetchall()
+        return {"students": [dict(r) for r in rows]}
+    finally:
+        conn.close()
+
+
+@app.get("/api/attendance")
+def get_attendance_for_date(date: str = Query(...), current_user: dict = Depends(require_attendance_access)):
+    conn = get_conn()
+    try:
+        rows = conn.execute("""
+            SELECT student_id, status, note, recorded_by, updated_at
+            FROM attendance_records
+            WHERE date=?
+        """, (date,)).fetchall()
+        return {
+            "date": date,
+            "records": [dict(r) for r in rows],
+            "locked": attendance_requires_override(date, current_user.get("role", "")),
+        }
+    finally:
+        conn.close()
+
+
+@app.get("/api/attendance/summary")
+def get_attendance_summary(date: str = Query(...), current_user: dict = Depends(get_current_user)):
+    conn = get_conn()
+    try:
+        total = conn.execute("SELECT COUNT(*) AS c FROM students WHERE is_active=1").fetchone()["c"]
+        rows = conn.execute("""
+            SELECT status, COUNT(*) AS c
+            FROM attendance_records
+            WHERE date=?
+            GROUP BY status
+        """, (date,)).fetchall()
+        counts = {"excused": 0, "unexcused": 0}
+        for r in rows:
+            if r["status"] in counts:
+                counts[r["status"]] = r["c"]
+        absent = counts["excused"] + counts["unexcused"]
+        return {
+            "date": date,
+            "total": total,
+            "present": total - absent,
+            "excused": counts["excused"],
+            "unexcused": counts["unexcused"],
+        }
+    finally:
+        conn.close()
+
+
+@app.post("/api/attendance")
+def save_attendance(payload: AttendanceSaveRequest, current_user: dict = Depends(require_attendance_access)):
+    role = current_user.get("role", "")
+    if attendance_requires_override(payload.date, role):
+        verify_override_password(payload.override_password)
+
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        for rec in payload.records:
+            cur.execute("""
+                INSERT INTO attendance_records (student_id, date, status, note, recorded_by, updated_at)
+                VALUES (?, ?, ?, ?, ?, datetime('now'))
+                ON CONFLICT(student_id, date) DO UPDATE SET
+                    status=excluded.status,
+                    note=excluded.note,
+                    recorded_by=excluded.recorded_by,
+                    updated_at=excluded.updated_at
+            """, (rec.student_id, payload.date, rec.status, rec.note, current_user.get("username", "")))
+
+        excused = sum(1 for r in payload.records if r.status == "excused")
+        unexcused = sum(1 for r in payload.records if r.status == "unexcused")
+        cur.execute("""
+            INSERT INTO upload_audit_logs
+            (file_id, file_name, folder, action, old_rows, new_rows, user, reason, required_password)
+            VALUES (NULL, ?, ?, 'ATTENDANCE', 0, ?, ?, ?, ?)
+        """, (
+            f"Điểm danh {payload.date}",
+            normalize_user_folder(current_user),
+            len(payload.records),
+            current_user.get("username", ""),
+            f"{excused} có phép, {unexcused} không phép",
+            1 if attendance_requires_override(payload.date, role) else 0,
+        ))
+
+        conn.commit()
+        return {"message": "Đã lưu điểm danh", "count": len(payload.records)}
     finally:
         conn.close()
 
