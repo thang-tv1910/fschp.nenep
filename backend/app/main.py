@@ -60,6 +60,14 @@ class UserUpdateRequest(BaseModel):
     password: str = Field(default="", max_length=200)
 
 
+class PointRuleRequest(BaseModel):
+    keyword: str = Field(min_length=1, max_length=300)
+    point: float
+    rule_type: str = Field(min_length=1, max_length=40)
+    note: str = Field(default="", max_length=200)
+    is_active: bool = True
+
+
 @app.on_event("startup")
 def startup():
     init_db()
@@ -933,6 +941,97 @@ def delete_user(user_id: int, current_user: dict = Depends(require_admin)):
         return {"message": "Đã khóa tài khoản"}
     finally:
         conn.close()
+
+
+@app.get("/api/point-rules")
+def list_point_rules(current_user: dict = Depends(require_admin)):
+    conn = get_conn()
+    try:
+        rows = conn.execute("""
+            SELECT id, keyword, point, rule_type, note, is_active, created_at
+            FROM point_rules
+            ORDER BY is_active DESC, rule_type, id
+        """).fetchall()
+        return {"rules": [dict(r) for r in rows]}
+    finally:
+        conn.close()
+
+
+@app.post("/api/point-rules")
+def create_point_rule(payload: PointRuleRequest, current_user: dict = Depends(require_admin)):
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        next_id_row = cur.execute("SELECT COALESCE(MAX(id), 0) + 1 AS next_id FROM point_rules").fetchone()
+        next_id = next_id_row["next_id"]
+        cur.execute("""
+            INSERT INTO point_rules (id, keyword, point, rule_type, note, is_active)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (next_id, payload.keyword.strip(), payload.point, payload.rule_type.strip(),
+              payload.note.strip(), 1 if payload.is_active else 0))
+        conn.commit()
+        return {"message": "Đã tạo quy tắc", "id": next_id}
+    finally:
+        conn.close()
+
+
+@app.put("/api/point-rules/{rule_id}")
+def update_point_rule(rule_id: int, payload: PointRuleRequest, current_user: dict = Depends(require_admin)):
+    conn = get_conn()
+    try:
+        existing = conn.execute("SELECT id FROM point_rules WHERE id=?", (rule_id,)).fetchone()
+        if not existing:
+            raise HTTPException(status_code=404, detail="Không tìm thấy quy tắc")
+        conn.execute("""
+            UPDATE point_rules
+            SET keyword=?, point=?, rule_type=?, note=?, is_active=?
+            WHERE id=?
+        """, (payload.keyword.strip(), payload.point, payload.rule_type.strip(),
+              payload.note.strip(), 1 if payload.is_active else 0, rule_id))
+        conn.commit()
+        return {"message": "Đã cập nhật quy tắc"}
+    finally:
+        conn.close()
+
+
+@app.delete("/api/point-rules/{rule_id}")
+def deactivate_point_rule(rule_id: int, current_user: dict = Depends(require_admin)):
+    conn = get_conn()
+    try:
+        existing = conn.execute("SELECT id FROM point_rules WHERE id=?", (rule_id,)).fetchone()
+        if not existing:
+            raise HTTPException(status_code=404, detail="Không tìm thấy quy tắc")
+        conn.execute("UPDATE point_rules SET is_active=0 WHERE id=?", (rule_id,))
+        conn.commit()
+        return {"message": "Đã vô hiệu hoá quy tắc"}
+    finally:
+        conn.close()
+
+
+@app.get("/api/settings/permissions")
+def get_permissions_matrix(current_user: dict = Depends(require_admin)):
+    return {
+        "roles": [
+            {"role": "admin", "label": "Admin", "scope": "Toàn trường (tất cả folder)",
+             "can_delete_file": True, "can_manage_users": True, "override_after_24h": "Không cần"},
+            {"role": "bangiamhieu", "label": "Ban Giám Hiệu", "scope": "Toàn trường (tất cả folder)",
+             "can_delete_file": False, "can_manage_users": False, "override_after_24h": "Cần mật khẩu"},
+            {"role": "quanly", "label": "Quản lý trường", "scope": "Toàn trường (tất cả folder)",
+             "can_delete_file": False, "can_manage_users": False, "override_after_24h": "Cần mật khẩu"},
+            {"role": "giamthi", "label": "Bộ phận Giám thị", "scope": "Chỉ folder 'giamthi'",
+             "can_delete_file": False, "can_manage_users": False, "override_after_24h": "Cần mật khẩu"},
+            {"role": "bantru", "label": "Bộ phận Bán trú", "scope": "Chỉ folder 'bantru'",
+             "can_delete_file": False, "can_manage_users": False, "override_after_24h": "Cần mật khẩu"},
+        ]
+    }
+
+
+@app.get("/api/settings/security")
+def get_security_settings(current_user: dict = Depends(require_admin)):
+    return {
+        "override_threshold_hours": 24,
+        "override_password_configured": bool(settings.override_password_hash),
+    }
 
 
 @app.get("/data/permissions")
