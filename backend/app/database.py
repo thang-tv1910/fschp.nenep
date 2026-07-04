@@ -1716,7 +1716,7 @@ def init_db():
     cur.executemany(
         """
         INSERT INTO point_rules (id, keyword, point, rule_type, note, is_active)
-        VALUES (?, ?, ?, ?, ?, 1)
+        VALUES (?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
             keyword=excluded.keyword,
             point=excluded.point,
@@ -1724,19 +1724,19 @@ def init_db():
             note=excluded.note,
             is_active=1
         """,
-        POINT_RULES
+        [(r[0], r[1], r[2], r[3], r[4], 1) for r in POINT_RULES]
     )
 
     cur.executemany(
         """
         INSERT INTO students (id, full_name, class_name, is_active)
-        VALUES (?, ?, ?, 1)
+        VALUES (?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
             full_name=excluded.full_name,
             class_name=excluded.class_name,
             is_active=1
         """,
-        STUDENTS
+        [(s[0], s[1], s[2], 1) for s in STUDENTS]
     )
 
     conn.commit()
