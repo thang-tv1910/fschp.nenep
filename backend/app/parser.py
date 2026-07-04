@@ -358,6 +358,115 @@ def parse_fsp_file(file_path, folder, filename):
     return rows
 
 
+def parse_duration_minutes(value):
+    if value is None:
+        return None
+    s = str(value).strip().lower().replace("phút", "").replace("p", "").strip()
+    if not s:
+        return None
+    try:
+        return float(s)
+    except Exception:
+        return None
+
+
+def extract_date_from_sheet_title(file_path, sheet_name):
+    try:
+        raw = pd.read_excel(file_path, sheet_name=sheet_name, header=None, nrows=3)
+    except Exception:
+        return None
+    text = " ".join(str(v) for v in raw.values.flatten() if v is not None and str(v) != "nan")
+    m = re.search(r"ng[àa]y\s*(\d{1,2})\s*th[áa]ng\s*(\d{1,2})\s*n[ăa]m\s*(\d{4})", text, re.IGNORECASE)
+    if m:
+        try:
+            return datetime(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+        except Exception:
+            return None
+    return None
+
+
+def _find_col(columns, *keywords):
+    norm_cols = {str(c).strip().lower(): c for c in columns}
+    for kw in keywords:
+        for norm, original in norm_cols.items():
+            if kw in norm:
+                return original
+    return None
+
+
+def build_teacher_row(date_obj, teacher_name, subject_group, specialty, error_type,
+                       class_name, period, duration_minutes, reason, note, source_file):
+    return {
+        "date": date_obj.strftime("%Y-%m-%d"),
+        "date_label": date_obj.strftime("%d/%m/%Y"),
+        "week": f"W{date_obj.isocalendar()[1]}",
+        "month": f"{date_obj.month:02d}/{date_obj.year}",
+        "teacher_name": clean_value(teacher_name),
+        "subject_group": clean_value(subject_group),
+        "specialty": clean_value(specialty),
+        "error_type": clean_value(error_type),
+        "class_name": clean_value(class_name),
+        "period": clean_value(period),
+        "duration_minutes": duration_minutes,
+        "reason": clean_value(reason),
+        "note": clean_value(note),
+        "source_file": source_file,
+    }
+
+
+def parse_teacher_excel(file_path, filename=""):
+    rows = []
+    excel = pd.ExcelFile(file_path)
+
+    for sheet in excel.sheet_names:
+        date_obj = parse_date_from_text(sheet)
+        if not date_obj:
+            date_obj = extract_date_from_sheet_title(file_path, sheet)
+        if not date_obj and len(excel.sheet_names) == 1:
+            date_obj = parse_date_from_text(filename)
+        if not date_obj:
+            continue
+
+        try:
+            df = pd.read_excel(file_path, sheet_name=sheet, header=3)
+        except Exception:
+            continue
+
+        col_name = _find_col(df.columns, "họ và tên", "ho va ten", "họ tên")
+        col_group = _find_col(df.columns, "tổ chuyên môn", "to chuyen mon")
+        col_specialty = _find_col(df.columns, "chuyên môn", "chuyen mon")
+        col_error = _find_col(df.columns, "lỗi ghi nhận", "loi ghi nhan", "lỗi")
+        col_class = _find_col(df.columns, "lớp", "lop")
+        col_period = _find_col(df.columns, "tiết", "tiet")
+        col_duration = _find_col(df.columns, "thời gian", "thoi gian")
+        col_reason = _find_col(df.columns, "lý do", "ly do")
+        col_note = _find_col(df.columns, "ghi chú", "ghi chu")
+
+        if not col_name or not col_error:
+            continue
+
+        for _, row in df.iterrows():
+            teacher_name = clean_value(row.get(col_name))
+            error_type = clean_value(row.get(col_error))
+            if not teacher_name or not error_type:
+                continue
+            rows.append(build_teacher_row(
+                date_obj=date_obj,
+                teacher_name=teacher_name,
+                subject_group=clean_value(row.get(col_group)) if col_group else "",
+                specialty=clean_value(row.get(col_specialty)) if col_specialty else "",
+                error_type=error_type,
+                class_name=clean_value(row.get(col_class)) if col_class else "",
+                period=clean_value(row.get(col_period)) if col_period else "",
+                duration_minutes=parse_duration_minutes(row.get(col_duration)) if col_duration else None,
+                reason=clean_value(row.get(col_reason)) if col_reason else "",
+                note=clean_value(row.get(col_note)) if col_note else "",
+                source_file=filename,
+            ))
+
+    return rows
+
+
 def parse_excel(file_path, folder="giamthi", filename=""):
     filename_lower = filename.lower()
 

@@ -178,6 +178,15 @@ body {
   overflow-y: auto;
   padding-right: 2px;
 }
+.side-nav .section-title {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 14px 12px 6px;
+}
+.side-nav .section-title:first-child { padding-top: 4px; }
 .side-nav .tab-btn {
   width: 100%;
   display: flex;
@@ -1908,6 +1917,45 @@ tbody tr:hover {
     </div>
   </section>
 
+  <section id="tab_teacher_admin" class="tab-content">
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+        <h3 style="margin:0">Upload file ghi nhận giáo viên</h3>
+        <label class="btn btn-primary" style="cursor:pointer">
+          <i class="ti ti-upload"></i>Upload file mới
+          <input type="file" id="teacherFileInput" accept=".xlsx,.xls" style="display:none" onchange="uploadTeacherFile(this.files[0])">
+        </label>
+      </div>
+      <p style="margin:0 0 16px;color:var(--text-muted);font-size:13px">Hỗ trợ file 1 sheet/ngày hoặc nhiều sheet/nhiều ngày trong cùng 1 file — hệ thống tự nhận diện ngày.</p>
+      <div class="table-wrap" id="teacherFileList"></div>
+    </div>
+  </section>
+
+  <section id="tab_teacher_analysis" class="tab-content">
+    <div class="panel" style="margin-bottom:20px">
+      <div style="display:flex;gap:14px;flex-wrap:wrap">
+        <div class="filter-group"><label>Tháng</label><select id="tf_month" onchange="renderTeacherAnalysis()"></select></div>
+        <div class="filter-group"><label>Tuần</label><select id="tf_week" onchange="renderTeacherAnalysis()"></select></div>
+        <div class="filter-group"><label>Tổ chuyên môn</label><select id="tf_group" onchange="renderTeacherAnalysis()"></select></div>
+        <div class="filter-group"><label>Giáo viên</label><select id="tf_teacher" onchange="renderTeacherAnalysis()"></select></div>
+        <div class="filter-group"><label>Loại lỗi</label><select id="tf_error" onchange="renderTeacherAnalysis()"></select></div>
+      </div>
+    </div>
+
+    <div class="setting-grid" style="margin-bottom:20px">
+      <div class="setting-card"><h4 id="tKpiTotal" style="color:var(--fpt-orange)">0</h4><p>Tổng lượt ghi nhận</p></div>
+      <div class="setting-card" style="background:var(--fpt-orange-light)"><h4 id="tKpiTop" style="color:var(--fpt-orange);font-size:16px">—</h4><p>GV bị ghi nhận nhiều nhất</p></div>
+      <div class="setting-card" style="background:var(--fpt-blue-light)"><h4 id="tKpiGroup" style="color:var(--fpt-blue);font-size:16px">—</h4><p>Tổ nhiều lỗi nhất</p></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel"><h3>Xếp hạng giáo viên theo số lượt ghi nhận</h3><div class="table-wrap" id="teacherRankingTable"></div></div>
+      <div class="panel"><h3>Cơ cấu theo tổ chuyên môn</h3><div class="table-wrap" id="teacherGroupChart"></div></div>
+    </div>
+
+    <div class="panel"><h3>Chi tiết từng lượt ghi nhận</h3><div class="table-wrap" id="teacherDetailTable" style="max-height:500px"></div></div>
+  </section>
+
   <section id="tab_audit" class="tab-content">
     <div class="panel">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap">
@@ -2041,7 +2089,7 @@ function monthSort(a,b){
   return String(a).localeCompare(String(b),'vi');
 }
 
-const TAB_ICONS = {overview:'layout-dashboard',detail:'database',admin:'clipboard-plus',attendance:'clipboard-check',audit:'history',ranking:'trophy',analysis:'alert-triangle',users:'users',settings:'settings'};
+const TAB_ICONS = {overview:'layout-dashboard',detail:'database',admin:'clipboard-plus',attendance:'clipboard-check',audit:'history',ranking:'trophy',analysis:'alert-triangle',users:'users',settings:'settings',teacher_admin:'clipboard-plus',teacher_analysis:'alert-triangle'};
 const ICON_PATHS = {
   circle:'<circle cx="12" cy="12" r="8"/>',
   settings:'<path d="M12 8a4 4 0 1 0 0 8a4 4 0 0 0 0-8z"/><path d="M4 12h2m12 0h2M12 4v2m0 12v2M6.5 6.5l1.4 1.4m8.2 8.2l1.4 1.4m0-11l-1.4 1.4m-8.2 8.2l-1.4 1.4"/>',
@@ -2146,31 +2194,52 @@ function buildTabs(){
     ranking:'Xếp hạng & Thi đua',
     analysis:'Phân tích lỗi & Cảnh báo',
     users:'Người dùng',
-    settings:'Cài đặt'
+    settings:'Cài đặt',
+    teacher_admin:'Ghi nhận nề nếp',
+    teacher_analysis:'Phân tích lỗi & Cảnh báo'
   };
   const role = APP.user?.role || '';
   const roleMenus = {
-    admin:['overview','detail','admin','attendance','ranking','analysis','audit','users'],
-    bangiamhieu:['overview','detail','ranking','analysis','audit'],
-    quanly:['overview','detail','admin','attendance','ranking','analysis','audit'],
-    giamthi:['overview','admin','attendance','detail','ranking','analysis'],
+    admin:['overview','detail','admin','attendance','ranking','analysis','teacher_admin','teacher_analysis','audit','users'],
+    bangiamhieu:['overview','detail','ranking','analysis','teacher_admin','teacher_analysis','audit'],
+    quanly:['overview','detail','admin','attendance','ranking','analysis','teacher_admin','teacher_analysis','audit'],
+    giamthi:['overview','admin','attendance','detail','ranking','analysis','teacher_admin','teacher_analysis'],
     bantru:['overview','admin','attendance','detail','ranking','analysis']
   };
+  const GROUPS = [
+    {header:null, ids:['overview']},
+    {header:'Học sinh', ids:['detail','admin','attendance','ranking','analysis']},
+    {header:'Giáo viên', ids:['teacher_admin','teacher_analysis']},
+    {header:'Hệ thống', ids:['audit','users']}
+  ];
   let allowed = roleMenus[role] || (APP.perms?.tabs || ['overview','daily','detail']);
   allowed = allowed.filter(id => id !== 'issues' && id !== 'warning' && id !== 'trend' && id !== 'daily' && id !== 'settings'); // giữ sidebar không có tab Cài đặt phía trên
+  const allowedSet = new Set(allowed);
   const bar = el('tabBar');
   bar.innerHTML = '';
-  allowed.forEach((id,i)=>{
-    const btn = document.createElement('button');
-    btn.className = 'tab-btn' + (i===0?' active':'');
-    const icon = TAB_ICONS[id] || 'circle';
-    btn.innerHTML = '<span class="tab-icon"><i class="ti ti-' + icon + '"></i></span><span class="tab-label">' + esc(labels[id] || id) + '</span>';
-    btn.dataset.tab = id;
-    btn.onclick = ()=> switchTab(id);
-    bar.appendChild(btn);
+  let first = null;
+  GROUPS.forEach(group => {
+    const idsInGroup = group.ids.filter(id => allowedSet.has(id));
+    if(!idsInGroup.length) return;
+    if(group.header){
+      const h = document.createElement('div');
+      h.className = 'section-title';
+      h.textContent = group.header;
+      bar.appendChild(h);
+    }
+    idsInGroup.forEach(id=>{
+      if(first === null) first = id;
+      const btn = document.createElement('button');
+      btn.className = 'tab-btn' + (first===id?' active':'');
+      const icon = TAB_ICONS[id] || 'circle';
+      btn.innerHTML = '<span class="tab-icon"><i class="ti ti-' + icon + '"></i></span><span class="tab-label">' + esc(labels[id] || id) + '</span>';
+      btn.dataset.tab = id;
+      btn.onclick = ()=> switchTab(id);
+      bar.appendChild(btn);
+    });
   });
   document.querySelectorAll('.tab-content').forEach(sec=>sec.classList.remove('active'));
-  const first = allowed[0] || 'overview';
+  first = first || 'overview';
   const firstEl = el('tab_'+first);
   if(firstEl) firstEl.classList.add('active');
 }
@@ -2191,13 +2260,17 @@ function switchTab(tid){
     ranking:['Xếp hạng & Thi đua','Bảng thi đua phục vụ chào cờ, khen thưởng và theo dõi từng khối.'],
     analysis:['Phân tích lỗi & Cảnh báo','Nhận diện lỗi phổ biến, học sinh/lớp chạm ngưỡng cần hỗ trợ.'],
     users:['Người dùng','Quản lý tài khoản, vai trò và quyền truy cập hệ thống.'],
-    settings:['Cài đặt','Thiết lập quy tắc điểm, bảo mật và cấu hình vận hành.']
+    settings:['Cài đặt','Thiết lập quy tắc điểm, bảo mật và cấu hình vận hành.'],
+    teacher_admin:['Ghi nhận nề nếp — Giáo viên','Upload file Excel ghi nhận lỗi giáo viên (vào muộn, tình trạng lớp học...).'],
+    teacher_analysis:['Phân tích lỗi & Cảnh báo — Giáo viên','Theo dõi lỗi giáo viên theo ngày/tuần/tháng, tổ chuyên môn.']
   };
   if(el('pageTitle') && titles[tid]){ el('pageTitle').textContent=titles[tid][0]; el('pageDesc').textContent=titles[tid][1]; }
-  el('filtersSection').style.display = (tid==='admin'||tid==='attendance'||tid==='audit'||tid==='users'||tid==='settings')?'none':'';
+  el('filtersSection').style.display = (tid==='admin'||tid==='attendance'||tid==='audit'||tid==='users'||tid==='settings'||tid==='teacher_admin'||tid==='teacher_analysis')?'none':'';
   if(el('attendanceOverviewBlock')) el('attendanceOverviewBlock').style.display = (tid==='overview') ? '' : 'none';
   if(tid==='admin'){ switchRecordSubtab('file', false); loadFiles(); populateQuickClassOptions(); }
   if(tid==='attendance') loadAttendanceTab();
+  if(tid==='teacher_admin') loadTeacherFiles();
+  if(tid==='teacher_analysis') loadTeacherAnalysis();
   if(tid==='audit') loadAuditLogs();
   if(tid==='users') renderUsersTable();
 
@@ -3290,6 +3363,144 @@ async function saveAttendance(){
     hideLoading();
   }
 }
+// ── TEACHER TRACKING ──
+let TEACHER_ROWS = [];
+let TEACHER_ROSTER = [];
+
+async function loadTeacherFiles(){
+  try{
+    const data = await apiJson('/api/teacher/files');
+    const files = data.files || [];
+    const rows = files.map(f=>[
+      esc(f.file_name),
+      esc(f.date_from||'')+' – '+esc(f.date_to||''),
+      f.row_count,
+      esc(f.uploaded_by),
+      esc(f.imported_at||''),
+      APP.user?.role==='admin' ? '<button class="btn btn-danger btn-sm" onclick="deleteTeacherFile('+f.id+')"><i class="ti ti-trash"></i></button>' : ''
+    ]);
+    mkTable('teacherFileList', ['Tên file','Phạm vi ngày','Số lượt','Người upload','Thời gian','' ], rows);
+  }catch(e){
+    el('teacherFileList').innerHTML = '<div class="empty-state"><p>'+esc(e.message||'Không tải được danh sách file')+'</p></div>';
+  }
+}
+async function uploadTeacherFile(file){
+  if(!file) return;
+  const fd = new FormData();
+  fd.append('file', file);
+  try{
+    showLoading('Đang upload file giáo viên…');
+    const res = await fetch(API + '/api/teacher/upload', {method:'POST', credentials:'include', body:fd});
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){
+      const msg = typeof data.detail === 'object' ? (data.detail.message || JSON.stringify(data.detail)) : (data.detail || 'Upload thất bại');
+      throw new Error(msg);
+    }
+    showAlert('success','Upload thành công.');
+    el('teacherFileInput').value = '';
+    await loadTeacherFiles();
+  }catch(e){
+    showAlert('error', esc(e.message||'Upload thất bại'));
+  }finally{
+    hideLoading();
+  }
+}
+async function deleteTeacherFile(id){
+  const ok = await showModal({title:'Xoá file', icon:'alert-triangle', body:'Xoá file này và toàn bộ lượt ghi nhận liên quan?', confirmText:'Xoá', cancelText:'Hủy'});
+  if(!ok) return;
+  try{
+    showLoading('Đang xoá…');
+    await apiJson('/api/teacher/files/'+encodeURIComponent(id), {method:'DELETE'});
+    showAlert('success','Đã xoá file.');
+    await loadTeacherFiles();
+  }catch(e){
+    showAlert('error', esc(e.message||'Không xoá được'));
+  }finally{
+    hideLoading();
+  }
+}
+
+async function loadTeacherAnalysis(){
+  try{
+    const [statsData, rosterData] = await Promise.all([
+      apiJson('/api/teacher/stats'),
+      apiJson('/api/teacher/roster')
+    ]);
+    TEACHER_ROWS = statsData.rows || [];
+    TEACHER_ROSTER = rosterData.teachers || [];
+    populateTeacherFilters();
+    renderTeacherAnalysis();
+  }catch(e){
+    showAlert('error', esc(e.message||'Không tải được dữ liệu giáo viên'));
+  }
+}
+function populateTeacherFilters(){
+  const months = [...new Set(TEACHER_ROWS.map(r=>r.month).filter(Boolean))].sort(monthSort);
+  const weeks = [...new Set(TEACHER_ROWS.map(r=>r.week).filter(Boolean))].sort((a,b)=>weekNum(a)-weekNum(b));
+  const groups = [...new Set(TEACHER_ROSTER.map(t=>t.subject_group).filter(Boolean))].sort();
+  const teachers = [...new Set(TEACHER_ROSTER.map(t=>t.full_name).filter(Boolean))].sort();
+  const errors = [...new Set(TEACHER_ROWS.map(r=>r.error_type).filter(Boolean))].sort();
+  el('tf_month').innerHTML = '<option value="">Tất cả tháng</option>'+months.map(m=>'<option value="'+esc(m)+'">'+esc(m)+'</option>').join('');
+  el('tf_week').innerHTML = '<option value="">Tất cả tuần</option>'+weeks.map(w=>'<option value="'+esc(w)+'">'+esc(w)+'</option>').join('');
+  el('tf_group').innerHTML = '<option value="">Tất cả tổ</option>'+groups.map(g=>'<option value="'+esc(g)+'">'+esc(g)+'</option>').join('');
+  el('tf_teacher').innerHTML = '<option value="">Tất cả giáo viên</option>'+teachers.map(t=>'<option value="'+esc(t)+'">'+esc(t)+'</option>').join('');
+  el('tf_error').innerHTML = '<option value="">Tất cả lỗi</option>'+errors.map(e2=>'<option value="'+esc(e2)+'">'+esc(e2)+'</option>').join('');
+}
+function renderTeacherAnalysis(){
+  const month = el('tf_month')?.value || '';
+  const week = el('tf_week')?.value || '';
+  const group = el('tf_group')?.value || '';
+  const teacher = el('tf_teacher')?.value || '';
+  const errorType = el('tf_error')?.value || '';
+
+  const filtered = TEACHER_ROWS.filter(r =>
+    (!month || r.month===month) &&
+    (!week || r.week===week) &&
+    (!group || r.subject_group===group) &&
+    (!teacher || r.teacher_name===teacher) &&
+    (!errorType || r.error_type===errorType)
+  );
+
+  el('tKpiTotal').textContent = filtered.length;
+
+  const byTeacher = {};
+  filtered.forEach(r=>{
+    byTeacher[r.teacher_name] = byTeacher[r.teacher_name] || {name:r.teacher_name, group:r.subject_group, count:0, minutes:0, errors:{}};
+    byTeacher[r.teacher_name].count++;
+    byTeacher[r.teacher_name].minutes += (+r.duration_minutes || 0);
+    byTeacher[r.teacher_name].errors[r.error_type] = (byTeacher[r.teacher_name].errors[r.error_type]||0)+1;
+  });
+  const rankingList = Object.values(byTeacher).sort((a,b)=>b.count-a.count);
+
+  el('tKpiTop').textContent = rankingList[0] ? rankingList[0].name : '—';
+
+  const byGroup = {};
+  filtered.forEach(r=>{ byGroup[r.subject_group||'—'] = (byGroup[r.subject_group||'—']||0)+1; });
+  const groupList = Object.entries(byGroup).sort((a,b)=>b[1]-a[1]);
+  el('tKpiGroup').textContent = groupList[0] ? groupList[0][0] : '—';
+
+  const rankRows = rankingList.map((t,i)=>{
+    const topError = Object.entries(t.errors).sort((a,b)=>b[1]-a[1])[0];
+    return [i+1, esc(t.name), esc(t.group||''), t.count, t.minutes?Math.round(t.minutes)+'p':'—', topError?esc(topError[0]):''];
+  });
+  mkTable('teacherRankingTable', ['#','Giáo viên','Tổ','Số lượt','Tổng phút muộn','Lỗi phổ biến'], rankRows);
+
+  const maxGroupCount = groupList.length ? groupList[0][1] : 1;
+  const chartHtml = groupList.map(([g,c])=>
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:9px;font-size:12px">'
+    +'<div style="width:100px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(g)+'</div>'
+    +'<div style="flex:1;background:var(--border-light);border-radius:4px;height:14px;overflow:hidden"><div style="background:var(--fpt-orange);height:100%;border-radius:4px;width:'+Math.round(c/maxGroupCount*100)+'%"></div></div>'
+    +'<div style="width:24px;text-align:right;font-weight:700;font-size:11.5px">'+c+'</div>'
+    +'</div>'
+  ).join('');
+  el('teacherGroupChart').innerHTML = chartHtml || '<div class="empty-state"><p>Không có dữ liệu</p></div>';
+
+  const detailRows = filtered
+    .sort((a,b)=>String(b.date).localeCompare(String(a.date)))
+    .map(r=>[esc(r.date_label||r.date||''), esc(r.teacher_name), esc(r.subject_group||''), esc(r.error_type), r.duration_minutes?Math.round(r.duration_minutes)+'p':'—']);
+  mkTable('teacherDetailTable', ['Ngày','Giáo viên','Tổ','Lỗi','Thời gian'], detailRows);
+}
+
 // ── SETTINGS PANELS ──
 function toggleAllReportSections(val){
   ['repSecOverview','repSecRanking','repSecIssues','repSecDaily','repSecDetail'].forEach(id=>{ if(el(id)) el(id).checked = val; });

@@ -1653,6 +1653,44 @@ def init_db():
             is_active    INTEGER DEFAULT 1
         );
 
+        CREATE TABLE IF NOT EXISTS teacher_files (
+            id           SERIAL PRIMARY KEY,
+            file_name    TEXT NOT NULL,
+            uploaded_by  TEXT NOT NULL,
+            row_count    INTEGER DEFAULT 0,
+            date_from    TEXT,
+            date_to      TEXT,
+            status       TEXT DEFAULT 'OK',
+            imported_at  TEXT DEFAULT (to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS'))
+        );
+
+        CREATE TABLE IF NOT EXISTS teachers (
+            id            SERIAL PRIMARY KEY,
+            full_name     TEXT UNIQUE NOT NULL,
+            subject_group TEXT,
+            specialty     TEXT,
+            is_active     INTEGER DEFAULT 1
+        );
+
+        CREATE TABLE IF NOT EXISTS teacher_incidents (
+            id               SERIAL PRIMARY KEY,
+            teacher_id       INTEGER NOT NULL,
+            date             TEXT,
+            date_label       TEXT,
+            week             TEXT,
+            month            TEXT,
+            error_type       TEXT,
+            class_name       TEXT,
+            period           TEXT,
+            duration_minutes REAL,
+            reason           TEXT,
+            note             TEXT,
+            source_file      TEXT,
+            file_id          INTEGER,
+            FOREIGN KEY (teacher_id) REFERENCES teachers(id),
+            FOREIGN KEY (file_id) REFERENCES teacher_files(id)
+        );
+
         CREATE TABLE IF NOT EXISTS attendance_records (
             id           SERIAL PRIMARY KEY,
             student_id   INTEGER NOT NULL,

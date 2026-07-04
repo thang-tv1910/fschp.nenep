@@ -21,7 +21,7 @@ from app.auth import (
 )
 from app.config import get_settings
 from app.database import get_conn, init_db
-from app.parser import parse_excel
+from app.parser import parse_excel, parse_teacher_excel
 from app.security import verify_password, hash_password
 
 settings = get_settings()
@@ -740,7 +740,7 @@ def get_imported_files(current_user: dict = Depends(get_current_user)):
 
 @app.get("/data/audit-logs")
 def get_audit_logs(current_user: dict = Depends(get_current_user)):
-    if current_user["role"] not in ["admin", "quanly"]:
+    if current_user["role"] not in ["admin", "quanly", "bangiamhieu"]:
         raise HTTPException(status_code=403, detail="Không có quyền xem lịch sử chỉnh sửa")
 
     conn = get_conn()
@@ -1138,6 +1138,161 @@ def save_attendance(payload: AttendanceSaveRequest, current_user: dict = Depends
 
         conn.commit()
         return {"message": "Đã lưu điểm danh", "count": len(payload.records)}
+    finally:
+        conn.close()
+
+
+TEACHER_ROLES = {"admin", "bangiamhieu", "quanly", "giamthi"}  # bantru does not see teacher tracking
+
+
+def require_teacher_access(current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") not in TEACHER_ROLES:
+        raise HTTPException(status_code=403, detail="Không có quyền truy cập dữ liệu giáo viên")
+    return current_user
+
+
+def upsert_teacher(cur, full_name: str, subject_group: str, specialty: str) -> int:
+    cur.execute("""
+        INSERT INTO teachers (full_name, subject_group, specialty, is_active)
+        VALUES (?, ?, ?, 1)
+        ON CONFLICT(full_name) DO UPDATE SET
+            subject_group = CASE WHEN excluded.subject_group != '' THEN excluded.subject_group ELSE teachers.subject_group END,
+            specialty = CASE WHEN excluded.specialty != '' THEN excluded.specialty ELSE teachers.specialty END,
+            is_active = 1
+    """, (full_name, subject_group, specialty))
+    row = cur.execute("SELECT id FROM teachers WHERE full_name=?", (full_name,)).fetchone()
+    return row["id"]
+
+
+@app.post("/api/teacher/upload")
+async def upload_teacher_excel(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(require_teacher_access)
+):
+    if not file.filename.lower().endswith((".xlsx", ".xls")):
+        raise HTTPException(status_code=400, detail="Chỉ hỗ trợ file Excel (.xlsx, .xls)")
+
+    file_name = validate_file_name(file.filename)
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx")
+
+    try:
+        write_upload_to_temp(file, tmp)
+        tmp.close()
+
+        rows = parse_teacher_excel(tmp.name, file_name)
+        if not rows:
+            raise HTTPException(status_code=400, detail="Không đọc được dữ liệu hợp lệ từ file (kiểm tra lại cột/định dạng ngày).")
+
+        dates = [r["date"] for r in rows]
+        conn = get_conn()
+        try:
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT INTO teacher_files (file_name, uploaded_by, row_count, date_from, date_to, status)
+                VALUES (?, ?, ?, ?, ?, 'OK')
+            """, (file_name, current_user["username"], len(rows), min(dates), max(dates)))
+            file_id = cur.lastrowid
+
+            for r in rows:
+                teacher_id = upsert_teacher(cur, r["teacher_name"], r["subject_group"], r["specialty"])
+                cur.execute("""
+                    INSERT INTO teacher_incidents
+                    (teacher_id, date, date_label, week, month, error_type, class_name, period,
+                     duration_minutes, reason, note, source_file, file_id)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    teacher_id, r["date"], r["date_label"], r["week"], r["month"],
+                    r["error_type"], r["class_name"], r["period"], r["duration_minutes"],
+                    r["reason"], r["note"], r["source_file"], file_id
+                ))
+
+            cur.execute("""
+                INSERT INTO upload_audit_logs
+                (file_id, file_name, folder, action, old_rows, new_rows, user, reason, required_password)
+                VALUES (NULL, ?, 'giaovien', 'UPLOAD_GIAOVIEN', 0, ?, ?, ?, 0)
+            """, (file_name, len(rows), current_user["username"], f"{min(dates)} → {max(dates)}"))
+
+            conn.commit()
+            return {"message": "Upload thành công", "file": file_name, "rows": len(rows)}
+        finally:
+            conn.close()
+    finally:
+        try:
+            os.unlink(tmp.name)
+        except Exception:
+            pass
+
+
+@app.get("/api/teacher/files")
+def list_teacher_files(current_user: dict = Depends(require_teacher_access)):
+    conn = get_conn()
+    try:
+        rows = conn.execute("""
+            SELECT id, file_name, uploaded_by, row_count, date_from, date_to, status, imported_at
+            FROM teacher_files
+            WHERE status != 'DELETED'
+            ORDER BY imported_at DESC
+        """).fetchall()
+        return {"files": [dict(r) for r in rows]}
+    finally:
+        conn.close()
+
+
+@app.delete("/api/teacher/files/{file_id}")
+def delete_teacher_file(file_id: int, current_user: dict = Depends(require_teacher_access)):
+    if current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Chỉ Admin được xoá file")
+    conn = get_conn()
+    try:
+        conn.execute("DELETE FROM teacher_incidents WHERE file_id=?", (file_id,))
+        conn.execute("UPDATE teacher_files SET status='DELETED' WHERE id=?", (file_id,))
+        conn.commit()
+        return {"message": "Đã xoá file"}
+    finally:
+        conn.close()
+
+
+@app.get("/api/teacher/roster")
+def get_teacher_roster(current_user: dict = Depends(require_teacher_access)):
+    conn = get_conn()
+    try:
+        rows = conn.execute("""
+            SELECT id, full_name, subject_group, specialty
+            FROM teachers WHERE is_active=1 ORDER BY full_name
+        """).fetchall()
+        return {"teachers": [dict(r) for r in rows]}
+    finally:
+        conn.close()
+
+
+@app.get("/api/teacher/incidents")
+def get_teacher_incidents(current_user: dict = Depends(require_teacher_access)):
+    conn = get_conn()
+    try:
+        rows = conn.execute("""
+            SELECT ti.date, ti.date_label, ti.week, ti.month, ti.error_type, ti.class_name,
+                   ti.period, ti.duration_minutes, ti.reason, ti.note, ti.source_file,
+                   t.full_name AS teacher_name, t.subject_group, t.specialty
+            FROM teacher_incidents ti
+            JOIN teachers t ON t.id = ti.teacher_id
+            ORDER BY ti.date DESC
+        """).fetchall()
+        return {"incidents": [dict(r) for r in rows]}
+    finally:
+        conn.close()
+
+
+@app.get("/api/teacher/stats")
+def get_teacher_stats(current_user: dict = Depends(require_teacher_access)):
+    conn = get_conn()
+    try:
+        rows = conn.execute("""
+            SELECT ti.date, ti.week, ti.month, ti.error_type, ti.duration_minutes,
+                   t.full_name AS teacher_name, t.subject_group
+            FROM teacher_incidents ti
+            JOIN teachers t ON t.id = ti.teacher_id
+        """).fetchall()
+        return {"rows": [dict(r) for r in rows]}
     finally:
         conn.close()
 
