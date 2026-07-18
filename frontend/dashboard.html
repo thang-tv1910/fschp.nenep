@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard Thi đua Nề nếp — FSCHP</title>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.0/dist/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -173,6 +174,7 @@ body {
 .side-nav {
   display: flex;
   flex: 1;
+  min-height: 0;
   flex-direction: column;
   gap: 4px;
   overflow-y: auto;
@@ -1524,11 +1526,12 @@ tbody tr:hover {
 }
 
 
-/* ── FSCHP sidebar refinement: full menu, no inner scrollbar, official logo ── */
+/* ── FSCHP sidebar refinement: full menu, official logo ── */
 .sidebar {
   width: 292px;
   padding: 18px 14px 16px;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 .brand {
   padding-bottom: 16px;
@@ -1592,11 +1595,12 @@ tbody tr:hover {
 
 
 
-/* ── FSCHP final UI update: no sidebar scrollbar, official transparent logo, cleaner leadership layout ── */
+/* ── FSCHP final UI update: official transparent logo, cleaner leadership layout ── */
 .sidebar {
   width: 292px;
   padding: 16px 14px;
-  overflow: hidden !important;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 .brand {
   padding-bottom: 14px;
@@ -1654,8 +1658,8 @@ tbody tr:hover {
 }
 .brand-school-mobile { font-size: 13px; letter-spacing: 0; }
 @media (max-width: 980px) {
-  .sidebar { overflow: hidden !important; }
-  .side-nav { overflow: visible !important; }
+  .sidebar { overflow-y: auto !important; overflow-x: hidden !important; }
+  .side-nav { overflow-y: auto !important; }
   .main-content { margin-left: 0; width: 100%; }
 }
 
@@ -1998,7 +2002,7 @@ tbody tr:hover {
     <div class="panel" id="pointRulesPanel" style="display:none">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
         <div>
-          <button class="btn btn-secondary btn-sm" onclick="closeSettingsPanel()" style="margin-bottom:8px"><i class="ti ti-arrow-left"></i>Quay lại</button>
+          <button class="btn btn-secondary btn-sm" onclick="closeSettingsPanel()" style="margin-bottom:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>Quay lại</button>
           <h3 style="margin:0">Quy tắc điểm</h3>
           <p style="margin:4px 0 0;color:var(--text-muted);font-size:13px">Danh sách quy tắc dùng để fuzzy-match lỗi vi phạm/khen thưởng với điểm cộng-trừ tương ứng.</p>
         </div>
@@ -2008,7 +2012,7 @@ tbody tr:hover {
     </div>
 
     <div class="panel" id="securityPanel" style="display:none">
-      <button class="btn btn-secondary btn-sm" onclick="closeSettingsPanel()" style="margin-bottom:8px"><i class="ti ti-arrow-left"></i>Quay lại</button>
+      <button class="btn btn-secondary btn-sm" onclick="closeSettingsPanel()" style="margin-bottom:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>Quay lại</button>
       <h3 style="margin:0">Bảo mật ghi đè</h3>
       <p style="margin:4px 0 16px;color:var(--text-muted);font-size:13px">Thông tin cấu hình hiện tại (chỉ xem — đổi mật khẩu ghi đè phải làm trực tiếp trên biến môi trường server, để tránh lưu mật khẩu vào database).</p>
       <div id="securityInfoBox" class="setting-grid">
@@ -2017,14 +2021,14 @@ tbody tr:hover {
     </div>
 
     <div class="panel" id="permissionsPanel" style="display:none">
-      <button class="btn btn-secondary btn-sm" onclick="closeSettingsPanel()" style="margin-bottom:8px"><i class="ti ti-arrow-left"></i>Quay lại</button>
+      <button class="btn btn-secondary btn-sm" onclick="closeSettingsPanel()" style="margin-bottom:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>Quay lại</button>
       <h3 style="margin:0">Phân quyền</h3>
       <p style="margin:4px 0 16px;color:var(--text-muted);font-size:13px">Ma trận quyền theo vai trò (chỉ xem — quyền hạn hiện được viết cố định trong code backend).</p>
       <div class="table-wrap" id="permissionsTable"></div>
     </div>
 
     <div class="panel" id="reportPanel" style="display:none">
-      <button class="btn btn-secondary btn-sm" onclick="closeSettingsPanel()" style="margin-bottom:8px"><i class="ti ti-arrow-left"></i>Quay lại</button>
+      <button class="btn btn-secondary btn-sm" onclick="closeSettingsPanel()" style="margin-bottom:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>Quay lại</button>
       <h3 style="margin:0">Xuất báo cáo Excel</h3>
       <p style="margin:12px 0;color:var(--text-muted);font-size:13px;max-width:640px">
         Chọn phạm vi thời gian và nội dung muốn đưa vào báo cáo — không cần rời trang này.
