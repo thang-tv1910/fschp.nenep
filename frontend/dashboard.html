@@ -18,10 +18,10 @@
   --fpt-blue-light: rgba(0, 91, 172, 0.08);
   --fpt-green: #16A34A;
   --fpt-green-light: rgba(22, 163, 74, 0.08);
-  --fpt-purple: #7C3AED;
-  --fpt-purple-light: rgba(124, 58, 237, 0.08);
-  --fpt-teal: #0D9488;
-  --fpt-teal-light: rgba(13, 148, 136, 0.08);
+  --fpt-purple: #8B5CF6;
+  --fpt-purple-light: #F1EBFE;
+  --fpt-teal: #14B8A6;
+  --fpt-teal-light: #E1F7F4;
   --fpt-navy: #0A1628;
   --fpt-navy-light: #16253b;
   --bg: #F8FAFC;
@@ -48,8 +48,10 @@
   --fpt-orange-light: rgba(243, 112, 33, 0.16);
   --fpt-blue-light: rgba(56, 145, 231, 0.18);
   --fpt-green-light: rgba(34, 197, 94, 0.16);
-  --fpt-purple-light: rgba(167, 139, 250, 0.18);
-  --fpt-teal-light: rgba(45, 212, 191, 0.18);
+  --fpt-purple: #A280F8;
+  --fpt-purple-light: rgba(162,128,248,.16);
+  --fpt-teal: #2FD3BE;
+  --fpt-teal-light: rgba(47,211,190,.14);
   --red-light: rgba(248, 113, 113, 0.16);
   --shadow: 0 1px 3px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.25);
   --shadow-hover: 0 10px 25px -5px rgba(0,0,0,0.3), 0 8px 10px -6px rgba(0,0,0,0.3);
@@ -646,9 +648,9 @@ body {
   margin-top: 10px;
 }
 .kpi-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -837,6 +839,43 @@ tbody tr:hover {
 .move-row .cls { font-weight: 700; }
 .move-empty { font-size: 12px; color: var(--text-muted); padding: 6px 0; }
 @media (max-width: 700px) { .move-grid { grid-template-columns: 1fr; } }
+
+.watch-row { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--border-light); }
+.watch-row:last-child { border-bottom: none; }
+.watch-avatar { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 12px; flex-shrink: 0; }
+.watch-info { flex: 1; min-width: 0; }
+.watch-name { font-weight: 700; font-size: 13.5px; }
+.watch-meta { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.watch-badge { font-size: 10.5px; font-weight: 700; padding: 3px 10px; border-radius: 99px; background: var(--red-light); color: var(--red); white-space: nowrap; flex-shrink: 0; }
+
+.tc-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.tc-row .lbl { width: 56px; font-size: 12px; color: var(--text-muted); flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tc-row .track { flex: 1; background: var(--border-light); border-radius: 6px; height: 15px; overflow: hidden; }
+.tc-row .fill { height: 100%; border-radius: 6px; }
+.tc-row .val { width: 28px; text-align: right; font-weight: 700; font-size: 12px; }
+
+.positive-hi { text-align: center; padding: 8px 0 4px; }
+.positive-hi .cls { font-size: 20px; font-weight: 800; color: var(--fpt-green); }
+.positive-list { margin-top: 12px; }
+.positive-list .pr { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border-light); font-size: 12.5px; }
+.positive-list .pr:last-child { border-bottom: none; }
+
+.todo-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border-light); font-size: 13px; }
+.todo-row:last-child { border-bottom: none; }
+.todo-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); flex-shrink: 0; }
+.todo-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.todo-time { font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: var(--border-light); color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
+.todo-time.today { background: var(--red-light); color: var(--red); }
+
+.tmini-stats { display: flex; gap: 10px; margin-bottom: 14px; }
+.tmini-stat { flex: 1; text-align: center; padding: 10px; background: var(--border-light); border-radius: 10px; }
+.tmini-stat .n { font-size: 20px; font-weight: 800; }
+.tmini-stat .l { font-size: 10.5px; color: var(--text-muted); margin-top: 2px; }
+.tmini-recent { display: flex; align-items: center; gap: 10px; padding-top: 4px; }
+.tmini-recent .watch-avatar { width: 32px; height: 32px; font-size: 11px; }
+.tmini-recent .nm { font-weight: 700; font-size: 12.5px; }
+.tmini-recent .sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+.tmini-link { margin-left: auto; font-size: 11.5px; font-weight: 700; color: var(--fpt-orange); white-space: nowrap; cursor: pointer; }
 
 .status-dot {
   display: inline-block;
@@ -1723,11 +1762,15 @@ tbody tr:hover {
 .side-nav .tab-btn { color: var(--text-muted) !important; }
 .side-nav .tab-btn:hover { background: var(--border-light) !important; }
 .side-nav .tab-btn:hover, .side-nav .tab-btn:hover .tab-icon { color: var(--text) !important; }
-.side-nav .tab-btn.active { background: var(--fpt-orange-light) !important; color: var(--fpt-orange) !important; }
+.side-nav .tab-btn.active { background: var(--fpt-orange) !important; color: #fff !important; box-shadow: 0 4px 10px rgba(243,112,33,.25); }
+.side-nav .tab-btn.active .tab-icon { color: #fff !important; }
+.side-nav .tab-btn.active::after { display: none !important; }
 .side-user { background: var(--border-light) !important; border: 1px solid var(--border) !important; }
 .side-name { color: var(--text) !important; }
 .side-role { color: var(--text-muted) !important; }
 .side-logout { background: var(--border-light) !important; color: var(--text-muted) !important; }
+:root, [data-theme="dark"] { --radius: 16px !important; }
+.kpi, .panel { border-radius: var(--radius) !important; }
 
 </style>
 </head>
@@ -1858,15 +1901,43 @@ tbody tr:hover {
       </div>
       <div id="moveWidget" class="move-grid"></div>
     </div>
+    <div class="panel" style="margin-top:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <h3 style="margin:0">Học sinh cần theo dõi</h3>
+        <span style="font-size:11px;color:var(--text-muted)">Vi phạm lặp lại nhiều tuần liên tiếp</span>
+      </div>
+      <div id="watchWidget"></div>
+    </div>
+    <div class="grid-2" style="margin-top:16px">
+      <div class="panel"><h3>Top lớp vi phạm nhiều nhất</h3><div id="topClassWidget"></div></div>
+      <div class="panel"><h3>Cần xử lý <span id="todoCount" style="font-weight:500;color:var(--text-muted);font-size:11.5px;float:right"></span></h3><div id="todoWidget"></div></div>
+    </div>
+    <div class="grid-2" style="margin-top:16px">
+      <div class="panel"><h3>Điểm tích cực nổi bật <span style="font-weight:500;color:var(--text-muted);font-size:11.5px;float:right">Tuần này</span></h3><div id="positiveWidget"></div></div>
+      <div class="panel"><h3>Giáo viên <span style="font-weight:500;color:var(--text-muted);font-size:11.5px;float:right">Tuần này</span></h3><div id="teacherMiniWidget"></div></div>
+    </div>
   </section>
 
   <section id="tab_ranking" class="tab-content"><div class="panel"><h3>Bảng xếp hạng lớp</h3><div class="table-wrap" id="tableRanking"></div></div></section>
   <section id="tab_analysis" class="tab-content">
+    <div class="kpis" style="margin-bottom:20px">
+      <div class="kpi c-o"><div class="kpi-top"><div class="kpi-icon io"><i class="ti ti-alert-triangle"></i></div></div><div class="kpi-value" id="aKpiTotal">0</div><div class="kpi-label">Tổng lượt vi phạm kỳ này</div></div>
+      <div class="kpi c-o"><div class="kpi-top"><div class="kpi-icon io"><i class="ti ti-repeat"></i></div></div><div class="kpi-value" id="aKpiRepeat">0%</div><div class="kpi-label">Tỉ lệ lỗi lặp lại (cùng HS, ≥2 lần)</div></div>
+      <div class="kpi c-r"><div class="kpi-top"><div class="kpi-icon ir"><i class="ti ti-user-exclamation"></i></div></div><div class="kpi-value" id="aKpiHigh">0</div><div class="kpi-label">Học sinh cảnh báo mức cao</div></div>
+      <div class="kpi c-p"><div class="kpi-top"><div class="kpi-icon ip"><i class="ti ti-building"></i></div></div><div class="kpi-value" id="aKpiClass">0</div><div class="kpi-label">Lớp cần chú ý</div></div>
+    </div>
     <div class="grid-2">
-      <div class="panel"><h3>Cơ cấu điểm trừ theo lỗi</h3><div class="table-wrap" id="tableIssues"></div></div>
+      <div class="panel"><h3>Xu hướng theo loại lỗi <span style="font-weight:500;color:var(--text-muted);font-size:11.5px;float:right">8 tuần gần nhất</span></h3><div class="chart-box"><canvas id="chartCategoryTrend"></canvas></div></div>
       <div class="panel"><h3><i class="ti ti-list-details"></i> Lỗi lan rộng nhất</h3><div class="table-wrap" id="tableTopErrors"></div></div>
     </div>
     <div class="panel" style="margin-bottom:12px">
+      <h3 style="margin-bottom:12px">Mật độ vi phạm theo khối <span style="font-weight:500;color:var(--text-muted);font-size:11.5px;float:right">8 tuần</span></h3>
+      <div class="table-wrap" id="tableTrendMini" style="max-height:320px"></div>
+    </div>
+    <div class="panel">
+      <h3>Cơ cấu điểm trừ theo lỗi</h3><div class="table-wrap" id="tableIssues"></div>
+    </div>
+    <div class="panel" style="margin-bottom:12px;margin-top:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <h3 style="margin:0"><i class="ti ti-alert-triangle"></i> Học sinh chạm ngưỡng báo động</h3>
         <button class="btn btn-secondary btn-sm" onclick="exportViolation()"><i class="ti ti-download"></i>Xuất danh sách</button>
@@ -2020,15 +2091,16 @@ tbody tr:hover {
       </div>
     </div>
 
-    <div class="setting-grid" style="margin-bottom:20px">
-      <div class="setting-card"><h4 id="tKpiTotal" style="color:var(--fpt-orange)">0</h4><p>Tổng lượt ghi nhận</p></div>
-      <div class="setting-card" style="background:var(--fpt-orange-light)"><h4 id="tKpiTop" style="color:var(--fpt-orange);font-size:16px">—</h4><p>GV bị ghi nhận nhiều nhất</p></div>
-      <div class="setting-card" style="background:var(--fpt-blue-light)"><h4 id="tKpiGroup" style="color:var(--fpt-blue);font-size:16px">—</h4><p>Tổ nhiều lỗi nhất</p></div>
+    <div class="kpis" style="margin-bottom:20px">
+      <div class="kpi c-o"><div class="kpi-top"><div class="kpi-icon io"><i class="ti ti-alert-triangle"></i></div></div><div class="kpi-value" id="tKpiTotal">0</div><div class="kpi-label">Tổng lượt vi phạm tuần này</div></div>
+      <div class="kpi c-p"><div class="kpi-top"><div class="kpi-icon ip"><i class="ti ti-building"></i></div></div><div class="kpi-value sm" id="tKpiGroup">—</div><div class="kpi-label">Tổ nhiều lượt nhất</div></div>
+      <div class="kpi c-b"><div class="kpi-top"><div class="kpi-icon ib"><i class="ti ti-user-exclamation"></i></div></div><div class="kpi-value sm" id="tKpiTop">—</div><div class="kpi-label">GV bị ghi nhận nhiều nhất</div></div>
+      <div class="kpi c-g"><div class="kpi-top"><div class="kpi-icon ig"><i class="ti ti-trending-down"></i></div></div><div class="kpi-value" id="tKpiWoW">—</div><div class="kpi-label">So với tuần trước</div></div>
     </div>
 
     <div class="grid-2">
       <div class="panel"><h3>Xếp hạng giáo viên theo số lượt ghi nhận</h3><div class="table-wrap" id="teacherRankingTable"></div></div>
-      <div class="panel"><h3>Cơ cấu theo tổ chuyên môn</h3><div class="table-wrap" id="teacherGroupChart"></div></div>
+      <div class="panel"><h3>Lượt vi phạm theo tổ bộ môn</h3><div class="table-wrap" id="teacherGroupChart"></div></div>
     </div>
 
     <div class="panel"><h3>Chi tiết từng lượt ghi nhận</h3><div class="table-wrap" id="teacherDetailTable" style="max-height:500px"></div></div>
@@ -2234,6 +2306,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     startOverviewClock();
     loadOverviewAttendanceSummary();
     if (APP.perms?.can_manage_users) loadUsers();
+    loadTeacherAnalysis().then(()=>{ if(APP.lastOfficialFiltered) renderOverviewExtras(APP.lastOfficialFiltered); }).catch(()=>{});
   } catch(e){ doLogout() }
 });
 
@@ -2422,7 +2495,8 @@ function applyFilters(){
   APP.filteredDetailRows = filtered;
   renderDetailTablePage(1);
 
-  renderWarningTab(officialFiltered);renderTrend('class');renderMovementWidget(officialFiltered);
+  APP.lastOfficialFiltered = officialFiltered;
+  renderWarningTab(officialFiltered);renderTrend('class');renderMovementWidget(officialFiltered);renderOverviewExtras(officialFiltered);renderAnalysisHeatmap(officialFiltered);renderCategoryTrendChart(officialFiltered);
   APP.pendingChartData = {ranking,issues,daily,categories};
   if (APP.activeTab === 'overview') {
     renderCharts(APP.pendingChartData);
@@ -2623,14 +2697,95 @@ function renderWarningTab(rows){
   mkTable('tableTopStudents',['#','Học sinh','Lớp','Khối','Lần','Tuần liên tiếp','Trừ','Lỗi chính','Cảnh báo','Đề xuất'],ts.map((s,i)=>[i+1,esc(s.n),esc(s.c),esc(s.g),'<strong>'+s.cnt+'</strong>',s.streak>=2?'<strong>'+s.streak+'</strong>':'—','<span class="text-red">'+fmtN(rd(s.m))+'</span>','<span style="font-size:11px">'+esc([...s.iss].slice(0,2).join(', '))+'</span>',warnLevelBadge(s),warnLevelAction(s)]));
   const cm={};vio.forEach(r=>{const k=r.className||'?';if(!cm[k])cm[k]={c:k,l:r.level||'',g:r.grade||'',cnt:0,m:0,stu:new Set()};cm[k].cnt++;cm[k].m+=Math.abs(+r.point||0);if(r.studentName)cm[k].stu.add(r.studentName)});
   const tc=Object.values(cm).sort((a,b)=>b.cnt-a.cnt).slice(0,15);
+  APP.topViolationClasses=tc;
   mkTable('tableTopClasses',['#','Lớp','Cấp','Khối','VP','Trừ','HS'],tc.map((c,i)=>[i+1,'<strong>'+esc(c.c)+'</strong>',esc(c.l),esc(c.g),'<span class="text-red">'+c.cnt+'</span>','<span class="text-red">'+fmtN(rd(c.m))+'</span>',c.stu.size]));
   const em={};vio.forEach(r=>{const k=r.issue||'?';if(!em[k])em[k]={i:k,cat:r.category||'',cnt:0,m:0,cls:new Set(),stu:new Set()};em[k].cnt++;em[k].m+=Math.abs(+r.point||0);if(r.className)em[k].cls.add(r.className);if(r.studentName)em[k].stu.add(r.studentName)});
   const te=Object.values(em).map(e=>({...e,spread:e.cls.size*2+e.stu.size})).sort((a,b)=>b.spread-a.spread||b.cnt-a.cnt||b.m-a.m).slice(0,15);
   const totalStudents=[...new Set(vio.map(r=>(r.studentId||'')+'|'+(r.studentName||'')).filter(Boolean))].length||1;
   mkTable('tableTopErrors',['#','Lỗi','Loại','Lớp ảnh hưởng','HS ảnh hưởng','Tỷ lệ HS','Lượt','Trừ'],te.map((e,i)=>[i+1,esc(e.i),'<span class="pill">'+esc(e.cat)+'</span>','<strong>'+e.cls.size+'</strong>','<strong>'+e.stu.size+'</strong>',(e.stu.size/totalStudents*100).toFixed(1)+'%',e.cnt,'<span class="text-red">'+fmtN(rd(e.m))+'</span>']))
+
+  // KPI dải trên trang Phân tích lỗi
+  if(el('aKpiTotal')){
+    el('aKpiTotal').textContent = fmtN(vio.length);
+    const repeatCnt = Object.values(sm).filter(s=>s.cnt>=2).length;
+    el('aKpiRepeat').textContent = totalStudents ? Math.round(repeatCnt/totalStudents*100)+'%' : '0%';
+    el('aKpiHigh').textContent = fmtN(ts.filter(s=>warnLevel(s)===3).length);
+    el('aKpiClass').textContent = fmtN(tc.filter(c=>c.cnt>=10).length);
+  }
 }
 
-// ── CHUYỂN ĐỘNG TUẦN NÀY ──
+// ── HỌC SINH CẦN THEO DÕI / TOP LỚP / ĐIỂM TÍCH CỰC ──
+function renderOverviewExtras(rows){
+  // Học sinh cần theo dõi
+  const wEl=el('watchWidget');
+  if(wEl){
+    const list=(APP.violationStudents||[]).filter(s=>s.streak>=2).slice(0,5);
+    const shown=list.length?list:(APP.violationStudents||[]).slice(0,3);
+    wEl.innerHTML = shown.length ? shown.map((s,i)=>{
+      const initials=(s.n||'?').trim().split(/\s+/).slice(-2).map(w=>w[0]).join('').toUpperCase();
+      const bg=COLORS[i%COLORS.length];
+      const badge=s.streak>=2?'<span class="watch-badge">'+s.streak+' tuần liên tiếp</span>':'<span class="watch-badge" style="background:var(--border-light);color:var(--text-muted)">'+s.cnt+' lần</span>';
+      return '<div class="watch-row"><div class="watch-avatar" style="background:'+bg+'">'+esc(initials)+'</div><div class="watch-info"><div class="watch-name">'+esc(s.n)+'</div><div class="watch-meta">'+esc(s.c)+' · '+esc([...s.iss].slice(0,2).join(', '))+'</div></div>'+badge+'</div>';
+    }).join('') : '<div class="move-empty">Chưa có học sinh nào cần theo dõi</div>';
+  }
+  // Top lớp vi phạm nhiều nhất
+  const tEl=el('topClassWidget');
+  if(tEl){
+    const list=(APP.topViolationClasses||[]).slice(0,5);
+    const max=list.length?list[0].cnt:1;
+    tEl.innerHTML = list.length ? list.map((c,i)=>'<div class="tc-row"><div class="lbl">'+esc(c.c)+'</div><div class="track"><div class="fill" style="width:'+Math.round(c.cnt/max*100)+'%;background:'+COLORS[i%COLORS.length]+'"></div></div><div class="val">'+c.cnt+'</div></div>').join('') : '<div class="move-empty">Không có dữ liệu</div>';
+  }
+  // Điểm tích cực nổi bật (tuần này)
+  const pEl=el('positiveWidget');
+  if(pEl){
+    const ws=new Set();rows.forEach(r=>{if(r.week)ws.add(r.week)});
+    const weeks=[...ws].sort((a,b)=>(parseInt(a.replace(/\D/g,''))||0)-(parseInt(b.replace(/\D/g,''))||0));
+    const curW=weeks[weeks.length-1];
+    const pos=rows.filter(r=>r.week===curW&&(+r.point||0)>0);
+    if(!curW||!pos.length){
+      pEl.innerHTML='<div class="move-empty">Chưa có điểm cộng tuần này</div>';
+    } else {
+      const byClass={};pos.forEach(r=>{const k=r.className||'?';if(!byClass[k])byClass[k]={c:k,total:0,iss:{}};byClass[k].total+=(+r.point||0);byClass[k].iss[r.issue||'—']=(byClass[k].iss[r.issue||'—']||0)+(+r.point||0)});
+      const best=Object.values(byClass).sort((a,b)=>b.total-a.total)[0];
+      const reasons=Object.entries(best.iss).sort((a,b)=>b[1]-a[1]).slice(0,3);
+      pEl.innerHTML = '<div class="positive-hi"><div class="cls">Lớp '+esc(best.c)+' · +'+fmtN(rd(best.total))+' điểm cộng</div></div>'
+        + '<div class="positive-list">' + reasons.map(([k,v])=>'<div class="pr"><span>'+esc(k)+'</span><span class="text-green">+'+fmtN(rd(v))+'</span></div>').join('') + '</div>';
+    }
+  }
+  // Cần xử lý — vi phạm gần đây nhất (không có khái niệm trạng thái, hiển thị theo thời gian)
+  const todoEl=el('todoWidget');
+  if(todoEl){
+    const vio=rows.filter(r=>r.isViolation||(+r.point||0)<0);
+    const recent=[...vio].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,8);
+    const today=recent.length?String(recent[0].date||''):'';
+    if(el('todoCount')) el('todoCount').textContent = recent.length + ' mục gần nhất';
+    todoEl.innerHTML = recent.length ? recent.map(r=>{
+      const isToday = r.date===today;
+      const timeTag = isToday ? '<span class="todo-time today">Hôm nay</span>' : '<span class="todo-time">'+esc(r.dateLabel||r.date||'')+'</span>';
+      return '<div class="todo-row"><span class="todo-dot"></span><span class="todo-text">'+esc(r.studentName||'—')+' — '+esc(r.issue||'')+'</span>'+timeTag+'</div>';
+    }).join('') : '<div class="move-empty">Không có vi phạm gần đây</div>';
+  }
+  // Giáo viên (mini)
+  const tmEl=el('teacherMiniWidget');
+  if(tmEl){
+    if(!TEACHER_ROWS.length){
+      tmEl.innerHTML='<div class="move-empty">Chưa có dữ liệu giáo viên</div>';
+    } else {
+      const total=TEACHER_ROWS.length;
+      const byGroup={};TEACHER_ROWS.forEach(r=>{byGroup[r.subject_group||'—']=(byGroup[r.subject_group||'—']||0)+1});
+      const topGroup=Object.entries(byGroup).sort((a,b)=>b[1]-a[1])[0];
+      const latest=[...TEACHER_ROWS].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')))[0];
+      let html = '<div class="tmini-stats"><div class="tmini-stat"><div class="n">'+total+'</div><div class="l">Lượt ghi nhận</div></div><div class="tmini-stat"><div class="n" style="font-size:14px">'+esc(topGroup?topGroup[0]:'—')+'</div><div class="l">Tổ nhiều nhất</div></div></div>';
+      if(latest){
+        const initials=(latest.teacher_name||'?').trim().split(/\s+/).slice(-2).map(w=>w[0]).join('').toUpperCase();
+        html += '<div class="tmini-recent"><div class="watch-avatar" style="background:'+C.blue+'">'+esc(initials)+'</div><div><div class="nm">'+esc(latest.teacher_name||'')+'</div><div class="sub">Tổ '+esc(latest.subject_group||'')+' · '+esc(latest.error_type||'')+'</div></div><span class="tmini-link" onclick="switchTab(\'teacher_analysis\')">Xem chi tiết →</span></div>';
+      }
+      tmEl.innerHTML = html;
+    }
+  }
+}
+
+
 function renderMovementWidget(rows){
   const el2=el('moveWidget'); if(!el2) return;
   const ws=new Set();rows.forEach(r=>{if(r.week)ws.add(r.week)});
@@ -2646,15 +2801,11 @@ function renderMovementWidget(rows){
 }
 
 
-function renderTrend(mode){
-  el('btnTrendClass').style.background=mode==='class'?'var(--fpt-orange)':'';el('btnTrendClass').style.color=mode==='class'?'#fff':'';
-  el('btnTrendGrade').style.background=mode==='grade'?'var(--fpt-orange)':'';el('btnTrendGrade').style.color=mode==='grade'?'#fff':'';
-  const f={};FK.forEach(k=>{f[k]=el('f_'+k).value||''});
-  const rows=APP.allRows.filter(r=>isOfficialClassRow(r)).filter(r=>{if(f.month&&r.month!==f.month)return false;if(f.level&&r.level!==f.level)return false;if(f.grade&&mode==='class'&&String(r.grade)!==String(f.grade))return false;if(f.className&&r.className!==f.className)return false;return true});
+function buildHeatmapHTML(rows, mode){
   const vio=rows.filter(r=>r.isViolation||(+r.point||0)<0);
   const ws=new Set();vio.forEach(r=>{if(r.week)ws.add(r.week)});
   const weeks=[...ws].sort((a,b)=>(parseInt(a.replace(/\D/g,''))||0)-(parseInt(b.replace(/\D/g,''))||0));
-  if(!weeks.length){el('tableTrend').innerHTML='<div class="empty-state"><div class="icon"><i class="ti ti-chart-bar-off"></i></div><p>Không có dữ liệu</p></div>';return}
+  if(!weeks.length) return '<div class="empty-state"><div class="icon"><i class="ti ti-chart-bar-off"></i></div><p>Không có dữ liệu</p></div>';
   const gk=mode==='grade'?'grade':'className';const mx={};
   vio.forEach(r=>{const g=r[gk]||'?',w=r.week||'?';if(!mx[g])mx[g]={};mx[g][w]=(mx[g][w]||0)+1});
   const groups=Object.keys(mx).sort((a,b)=>mode==='grade'?(+a||99)-(+b||99):a.localeCompare(b,'vi'));
@@ -2669,7 +2820,31 @@ function renderTrend(mode){
       h+='<td style="'+style+'">'+(v||0)+'</td>'});
     let tr='—';if(wv.length>=2){const l=wv[wv.length-1],p=wv[wv.length-2];tr=l>p?'<span class="text-red">↑ +'+(l-p)+'</span>':l<p?'<span class="text-green">↓ '+(l-p)+'</span>':'<span style="color:var(--text-muted)">→</span>'}
     h+='<td><strong>'+t+'</strong></td><td>'+tr+'</td></tr>'});
-  h+='</tbody></table>';el('tableTrend').innerHTML=h;
+  h+='</tbody></table>';
+  return h;
+}
+function renderTrend(mode){
+  el('btnTrendClass').style.background=mode==='class'?'var(--fpt-orange)':'';el('btnTrendClass').style.color=mode==='class'?'#fff':'';
+  el('btnTrendGrade').style.background=mode==='grade'?'var(--fpt-orange)':'';el('btnTrendGrade').style.color=mode==='grade'?'#fff':'';
+  const f={};FK.forEach(k=>{f[k]=el('f_'+k).value||''});
+  const rows=APP.allRows.filter(r=>isOfficialClassRow(r)).filter(r=>{if(f.month&&r.month!==f.month)return false;if(f.level&&r.level!==f.level)return false;if(f.grade&&mode==='class'&&String(r.grade)!==String(f.grade))return false;if(f.className&&r.className!==f.className)return false;return true});
+  el('tableTrend').innerHTML = buildHeatmapHTML(rows, mode);
+}
+function renderAnalysisHeatmap(rows){
+  const t=el('tableTrendMini'); if(!t) return;
+  t.innerHTML = buildHeatmapHTML(rows, 'grade');
+}
+function renderCategoryTrendChart(rows){
+  const cv=el('chartCategoryTrend'); if(!cv) return;
+  const vio=rows.filter(r=>r.isViolation||(+r.point||0)<0);
+  const ws=new Set();vio.forEach(r=>{if(r.week)ws.add(r.week)});
+  const weeks=[...ws].sort((a,b)=>(parseInt(a.replace(/\D/g,''))||0)-(parseInt(b.replace(/\D/g,''))||0)).slice(-8);
+  const cats=[...new Set(vio.map(r=>r.category).filter(Boolean))].slice(0,4);
+  const catColors=[C.red,C.blue,C.purple,C.teal];
+  const datasets=cats.map((cat,i)=>({label:cat,data:weeks.map(w=>vio.filter(r=>r.week===w&&r.category===cat).length),borderColor:catColors[i%catColors.length],backgroundColor:'transparent',tension:.35,pointRadius:2,borderWidth:2}));
+  if(APP.charts.catTrend){try{APP.charts.catTrend.destroy()}catch(e){}}
+  if(typeof Chart==='undefined'||!weeks.length) return;
+  APP.charts.catTrend=new Chart(cv,{type:'line',data:{labels:weeks,datasets},options:lineO()});
 }
 
 // ── ADMIN — UPLOAD ──
@@ -3594,6 +3769,22 @@ function renderTeacherAnalysis(){
 
   el('tKpiTotal').textContent = filtered.length;
 
+  // So với tuần trước (chỉ tính khi không lọc theo 1 tuần cụ thể)
+  const wowEl = el('tKpiWoW');
+  if(wowEl){
+    const ws=new Set();TEACHER_ROWS.forEach(r=>{if(r.week)ws.add(r.week)});
+    const weeks=[...ws].sort((a,b)=>(parseInt(a.replace(/\D/g,''))||0)-(parseInt(b.replace(/\D/g,''))||0));
+    if(weeks.length>=2){
+      const curW=weeks[weeks.length-1],prevW=weeks[weeks.length-2];
+      const curC=TEACHER_ROWS.filter(r=>r.week===curW).length,prevC=TEACHER_ROWS.filter(r=>r.week===prevW).length;
+      if(prevC>0){
+        const pct=Math.round((curC-prevC)/prevC*100);
+        wowEl.innerHTML = (pct<=0?'↓':'↑')+Math.abs(pct)+'%';
+        wowEl.style.color = pct<=0 ? 'var(--fpt-green)' : 'var(--red)';
+      } else { wowEl.textContent='—'; }
+    } else { wowEl.textContent='—'; }
+  }
+
   const byTeacher = {};
   filtered.forEach(r=>{
     byTeacher[r.teacher_name] = byTeacher[r.teacher_name] || {name:r.teacher_name, group:r.subject_group, count:0, minutes:0, errors:{}};
@@ -3617,10 +3808,10 @@ function renderTeacherAnalysis(){
   mkTable('teacherRankingTable', ['#','Giáo viên','Tổ','Số lượt','Tổng phút muộn','Lỗi phổ biến'], rankRows);
 
   const maxGroupCount = groupList.length ? groupList[0][1] : 1;
-  const chartHtml = groupList.map(([g,c])=>
+  const chartHtml = groupList.map(([g,c],i)=>
     '<div style="display:flex;align-items:center;gap:8px;margin-bottom:9px;font-size:12px">'
     +'<div style="width:100px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(g)+'</div>'
-    +'<div style="flex:1;background:var(--border-light);border-radius:4px;height:14px;overflow:hidden"><div style="background:var(--fpt-orange);height:100%;border-radius:4px;width:'+Math.round(c/maxGroupCount*100)+'%"></div></div>'
+    +'<div style="flex:1;background:var(--border-light);border-radius:4px;height:14px;overflow:hidden"><div style="background:'+COLORS[i%COLORS.length]+';height:100%;border-radius:4px;width:'+Math.round(c/maxGroupCount*100)+'%"></div></div>'
     +'<div style="width:24px;text-align:right;font-weight:700;font-size:11.5px">'+c+'</div>'
     +'</div>'
   ).join('');
@@ -3994,6 +4185,7 @@ function toggleTheme(){
   const btn = el('themeToggleBtn');
   if(btn) btn.innerHTML = svgIcon(next === 'dark' ? 'sun' : 'moon');
   if(APP.pendingChartData && typeof Chart !== 'undefined') renderCharts(APP.pendingChartData);
+  if(APP.lastOfficialFiltered && typeof Chart !== 'undefined') renderCategoryTrendChart(APP.lastOfficialFiltered);
 }
 function showLoading(t){el('loadingText').textContent=t||'Đang tải…';el('loadingOverlay').classList.add('show')}
 function hideLoading(){el('loadingOverlay').classList.remove('show')}
