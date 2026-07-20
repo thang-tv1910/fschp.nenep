@@ -2398,6 +2398,15 @@ function buildTabs(){
   if(firstEl) firstEl.classList.add('active');
 }
 
+APP._tabLoadedAt = {};
+function maybeLoad(cacheKey, fn, maxAgeMs){
+  maxAgeMs = maxAgeMs || 20000;
+  const last = APP._tabLoadedAt[cacheKey] || 0;
+  if(Date.now() - last > maxAgeMs){
+    APP._tabLoadedAt[cacheKey] = Date.now();
+    fn();
+  }
+}
 function switchTab(tid){
   APP.activeTab = tid;
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -2422,11 +2431,11 @@ function switchTab(tid){
   el('filtersSection').style.display = (tid==='admin'||tid==='attendance'||tid==='audit'||tid==='users'||tid==='settings'||tid==='teacher_admin'||tid==='teacher_analysis')?'none':'';
   if(el('kpiRowWrap')) el('kpiRowWrap').style.display = (tid==='overview') ? '' : 'none';
   if(el('attendanceOverviewBlock')) el('attendanceOverviewBlock').style.display = (tid==='overview') ? '' : 'none';
-  if(tid==='admin'){ switchRecordSubtab('file', false); loadFiles(); populateQuickClassOptions(); }
-  if(tid==='attendance') loadAttendanceTab();
-  if(tid==='teacher_admin') loadTeacherFiles();
-  if(tid==='teacher_analysis') loadTeacherAnalysis();
-  if(tid==='audit') loadAuditLogs();
+  if(tid==='admin'){ switchRecordSubtab('file', false); maybeLoad('admin', loadFiles); populateQuickClassOptions(); }
+  if(tid==='attendance') maybeLoad('attendance', loadAttendanceTab);
+  if(tid==='teacher_admin') maybeLoad('teacher_admin', loadTeacherFiles);
+  if(tid==='teacher_analysis') maybeLoad('teacher_analysis', loadTeacherAnalysis);
+  if(tid==='audit') maybeLoad('audit', loadAuditLogs);
   if(tid==='users') renderUsersTable();
 
   // Close mobile sidebar if open
@@ -2437,7 +2446,7 @@ function switchTab(tid){
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
   if (tid === 'overview') {
-    loadOverviewAttendanceSummary();
+    maybeLoad('overview_att', loadOverviewAttendanceSummary, 15000);
     if (APP.chartsDirty && APP.pendingChartData) {
       renderCharts(APP.pendingChartData);
       APP.chartsDirty = false;
@@ -4174,8 +4183,11 @@ function replaceIconFonts(root=document){
 }
 function startIconObserver(){
   if(APP.iconObserver) return;
-  APP.iconObserver=new MutationObserver(muts=>{
-    muts.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType===1) replaceIconFonts(n)}));
+  let scheduled = false;
+  APP.iconObserver=new MutationObserver(()=>{
+    if(scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(()=>{ scheduled = false; replaceIconFonts(document.body); });
   });
   APP.iconObserver.observe(document.body,{childList:true,subtree:true});
 }
