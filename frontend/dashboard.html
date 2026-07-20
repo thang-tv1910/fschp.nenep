@@ -536,7 +536,7 @@ body {
   padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  background-color: #FAFAFA;
+  background-color: var(--bg);
   color: var(--text);
   font-family: inherit;
   font-size: 13px;
@@ -725,7 +725,7 @@ body {
   text-align: center;
   color: var(--text-muted);
   font-size: 13px;
-  background: #FAFAFA;
+  background: var(--bg);
   border: 1px dashed var(--border);
   border-radius: var(--radius-sm);
   padding: 20px;
@@ -777,7 +777,7 @@ thead th {
   position: sticky;
   top: 0;
   z-index: 2;
-  background: #FAFAFA;
+  background: var(--bg);
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -1023,7 +1023,7 @@ tbody tr:hover {
   cursor: pointer;
   transition: all 0.2s ease;
   margin-bottom: 24px;
-  background: #FAFAFA;
+  background: var(--bg);
 }
 .upload-zone:hover, .upload-zone.dragover {
   border-color: var(--fpt-orange);
@@ -1215,7 +1215,7 @@ tbody tr:hover {
   border-radius: var(--radius-sm);
   padding: 10px 14px;
   font-family: inherit;
-  background: #FAFAFA;
+  background: var(--bg);
   outline: none;
   transition: all 0.2s ease;
 }
@@ -1365,7 +1365,7 @@ tbody tr:hover {
   font-family: inherit;
   font-size: 14px;
   outline: none;
-  background: #FAFAFA;
+  background: var(--bg);
   transition: all 0.2s ease;
 }
 .modal-input:focus {
@@ -1375,7 +1375,7 @@ tbody tr:hover {
 }
 .modal-actions {
   padding: 16px 20px;
-  background: #FAFAFA;
+  background: var(--bg);
   display: flex;
   justify-content: flex-end;
   gap: 10px;
@@ -1879,7 +1879,7 @@ tbody tr:hover {
       <div class="filter-group"><label>Phân loại</label><select id="f_category" onchange="applyFilters()"></select></div>
       <div class="filter-group"><label>Lỗi</label><select id="f_issue" onchange="applyFilters()"></select></div>
     </div>
-    <div class="kpi-row">
+    <div class="kpi-row" id="kpiRowWrap">
       <div class="health-card"><div class="label">Chỉ số sức khỏe nề nếp</div><div class="health-score-ring" id="healthRing"></div><div class="health-verdict" id="healthVerdict">—</div></div>
       <div class="kpis" id="kpiBox"></div>
     </div>
@@ -2362,7 +2362,7 @@ function buildTabs(){
   };
   const GROUPS = [
     {header:null, ids:['overview']},
-    {header:'Học sinh', ids:['detail','admin','attendance','ranking','analysis']},
+    {header:'Học sinh', ids:['admin','attendance','detail','ranking','analysis']},
     {header:'Giáo viên', ids:['teacher_admin','teacher_analysis']},
     {header:'Hệ thống', ids:['audit','users']}
   ];
@@ -2420,6 +2420,7 @@ function switchTab(tid){
   };
   if(el('pageTitle') && titles[tid]){ el('pageTitle').textContent=titles[tid][0]; el('pageDesc').textContent=titles[tid][1]; }
   el('filtersSection').style.display = (tid==='admin'||tid==='attendance'||tid==='audit'||tid==='users'||tid==='settings'||tid==='teacher_admin'||tid==='teacher_analysis')?'none':'';
+  if(el('kpiRowWrap')) el('kpiRowWrap').style.display = (tid==='overview') ? '' : 'none';
   if(el('attendanceOverviewBlock')) el('attendanceOverviewBlock').style.display = (tid==='overview') ? '' : 'none';
   if(tid==='admin'){ switchRecordSubtab('file', false); loadFiles(); populateQuickClassOptions(); }
   if(tid==='attendance') loadAttendanceTab();
@@ -2801,20 +2802,35 @@ function renderMovementWidget(rows){
 }
 
 
+const DOW_LABELS = {0:'CN',1:'T2',2:'T3',3:'T4',4:'T5',5:'T6',6:'T7'};
+const DOW_ORDER = [1,2,3,4,5,6,0];
 function buildHeatmapHTML(rows, mode){
   const vio=rows.filter(r=>r.isViolation||(+r.point||0)<0);
-  const ws=new Set();vio.forEach(r=>{if(r.week)ws.add(r.week)});
-  const weeks=[...ws].sort((a,b)=>(parseInt(a.replace(/\D/g,''))||0)-(parseInt(b.replace(/\D/g,''))||0));
-  if(!weeks.length) return '<div class="empty-state"><div class="icon"><i class="ti ti-chart-bar-off"></i></div><p>Không có dữ liệu</p></div>';
-  const gk=mode==='grade'?'grade':'className';const mx={};
-  vio.forEach(r=>{const g=r[gk]||'?',w=r.week||'?';if(!mx[g])mx[g]={};mx[g][w]=(mx[g][w]||0)+1});
+  const gk=mode==='grade'?'grade':'className';
+  const weekFilterActive = !!(el('f_week') && el('f_week').value);
+  let cols, colLabelFn, keyFn, colHeaderLabel;
+  if(weekFilterActive){
+    cols = DOW_ORDER;
+    colLabelFn = (d)=>DOW_LABELS[d];
+    keyFn = (r)=>{ if(!r.date) return null; const dt=new Date(r.date+'T00:00:00'); return isNaN(dt)?null:dt.getDay(); };
+    colHeaderLabel = 'Theo thứ trong tuần';
+  } else {
+    const ws=new Set();vio.forEach(r=>{if(r.week)ws.add(r.week)});
+    cols=[...ws].sort((a,b)=>(parseInt(a.replace(/\D/g,''))||0)-(parseInt(b.replace(/\D/g,''))||0));
+    colLabelFn = (w)=>w;
+    keyFn = (r)=>r.week||null;
+    colHeaderLabel = 'Theo tuần';
+  }
+  if(!cols.length) return '<div class="empty-state"><div class="icon"><i class="ti ti-chart-bar-off"></i></div><p>Không có dữ liệu</p></div>';
+  const mx={};
+  vio.forEach(r=>{const g=r[gk]||'?';const k=keyFn(r);if(k===null||k===undefined)return;if(!mx[g])mx[g]={};mx[g][k]=(mx[g][k]||0)+1});
   const groups=Object.keys(mx).sort((a,b)=>mode==='grade'?(+a||99)-(+b||99):a.localeCompare(b,'vi'));
-  let maxVal=0;groups.forEach(g=>weeks.forEach(w=>{maxVal=Math.max(maxVal,mx[g][w]||0)}));
-  let h='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:11px;color:var(--text-muted)"><span>Ít</span><span style="width:70px;height:8px;border-radius:99px;background:linear-gradient(90deg,rgba(243,112,33,.08),rgba(243,112,33,.85));display:inline-block"></span><span>Nhiều</span></div>';
+  let maxVal=0;groups.forEach(g=>cols.forEach(w=>{maxVal=Math.max(maxVal,mx[g][w]||0)}));
+  let h='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:11px;color:var(--text-muted)"><span>'+colHeaderLabel+'</span><span style="margin-left:auto"></span><span>Ít</span><span style="width:70px;height:8px;border-radius:99px;background:linear-gradient(90deg,rgba(243,112,33,.08),rgba(243,112,33,.85));display:inline-block"></span><span>Nhiều</span></div>';
   h+='<table class="trend-table"><thead><tr><th style="text-align:left;position:sticky;left:0;background:var(--card);z-index:3">'+(mode==='grade'?'Khối':'Lớp')+'</th>';
-  weeks.forEach(w=>{h+='<th>'+esc(w)+'</th>'});h+='<th>Tổng</th><th>Trend</th></tr></thead><tbody>';
+  cols.forEach(w=>{h+='<th>'+esc(colLabelFn(w))+'</th>'});h+='<th>Tổng</th><th>Trend</th></tr></thead><tbody>';
   groups.forEach(g=>{h+='<tr><td class="row-label">'+esc(mode==='grade'?'Khối '+g:g)+'</td>';let t=0;const wv=[];
-    weeks.forEach(w=>{const v=mx[g][w]||0;t+=v;wv.push(v);
+    cols.forEach(w=>{const v=mx[g][w]||0;t+=v;wv.push(v);
       const alpha=v>0&&maxVal>0?Math.min(0.85,0.12+(v/maxVal)*0.73):0;
       const style=v>0?'background:rgba(243,112,33,'+alpha.toFixed(2)+');color:'+(alpha>0.45?'#fff':'var(--text)')+';font-weight:600':'color:var(--border)';
       h+='<td style="'+style+'">'+(v||0)+'</td>'});
@@ -3616,7 +3632,7 @@ function renderAttRoster(){
   const students = ATT_ROSTER.filter(s=>s.class_name===lop);
   grid.innerHTML = students.map(s=>{
     const isAbsent = ATT_STATE.has(s.id);
-    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border:1px solid ${isAbsent?'var(--red)':'var(--border)'};background:${isAbsent?'var(--red-light)':'#fff'};border-radius:8px;font-size:12.5px;cursor:pointer" onclick="${isAbsent?'removeAttAbsent('+s.id+')':'addAttAbsent('+s.id+')'}">
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border:1px solid ${isAbsent?'var(--red)':'var(--border)'};background:${isAbsent?'var(--red-light)':'var(--card)'};color:var(--text);border-radius:8px;font-size:12.5px;cursor:pointer" onclick="${isAbsent?'removeAttAbsent('+s.id+')':'addAttAbsent('+s.id+')'}">
       <span>${esc(s.full_name)}<br><span style="color:var(--text-muted);font-size:10.5px">${s.id}</span></span>
       <span>${isAbsent?'✕':'○'}</span>
     </div>`;
