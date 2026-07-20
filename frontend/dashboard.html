@@ -634,7 +634,7 @@ body {
 
 .kpi-top {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: flex-start;
 }
 .kpi-label {
@@ -643,6 +643,7 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-muted);
+  margin-top: 10px;
 }
 .kpi-icon {
   width: 36px;
@@ -668,13 +669,13 @@ body {
   font-size: 28px;
   font-weight: 800;
   letter-spacing: -0.03em;
-  margin-top: 12px;
+  margin-top: 14px;
   line-height: 1.2;
 }
 .kpi-value.sm {
   font-size: 15px;
   font-weight: 700;
-  margin-top: 16px;
+  margin-top: 14px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1696,6 +1697,28 @@ tbody tr:hover {
   .main-content { margin-left: 0; width: 100%; }
 }
 
+/* ── Reskin: light sidebar (overrides earlier navy-sidebar rules, colors only) ── */
+.sidebar {
+  background: var(--card) !important;
+  color: var(--text) !important;
+  border-right: 1px solid var(--border);
+  box-shadow: 2px 0 12px rgba(30,41,59,.04) !important;
+}
+.sidebar::before { background-image: radial-gradient(rgba(243,112,33,0.03) 1px, transparent 1px) !important; }
+.brand { border-bottom: 1px solid var(--border) !important; }
+.brand-school { color: var(--fpt-orange) !important; }
+.brand-campus { color: var(--text-muted) !important; }
+.brand-status { color: var(--text-muted) !important; }
+.nav-section-title { color: rgba(100,116,139,.55) !important; }
+.side-nav .tab-btn { color: var(--text-muted) !important; }
+.side-nav .tab-btn:hover { background: var(--border-light) !important; }
+.side-nav .tab-btn:hover, .side-nav .tab-btn:hover .tab-icon { color: var(--text) !important; }
+.side-nav .tab-btn.active { background: var(--fpt-orange-light) !important; color: var(--fpt-orange) !important; }
+.side-user { background: var(--border-light) !important; border: 1px solid var(--border) !important; }
+.side-name { color: var(--text) !important; }
+.side-role { color: var(--text-muted) !important; }
+.side-logout { background: var(--border-light) !important; color: var(--text-muted) !important; }
+
 </style>
 </head>
 <body>
@@ -2489,7 +2512,7 @@ function renderKPIs(s){
     {l:'Số lớp',v:fmtN(s.totalClasses),c:'c-t',i:'it',ic:'building-bank'},
     {l:'Lớp xuất sắc',v:s.bestClass||'—',c:'c-p',i:'ip',ic:'trophy',sm:1},
     {l:'Cần hỗ trợ',v:s.warningClass||'—',c:'c-r',i:'ir',ic:'bell',sm:1}
-  ].map(k=>'<div class="kpi '+k.c+'"><div class="kpi-top"><div class="kpi-label">'+k.l+'</div><div class="kpi-icon '+k.i+'"><i class="ti ti-'+k.ic+'"></i></div></div><div class="kpi-value'+(k.sm?' sm':'')+'">'+k.v+'</div></div>').join('')
+  ].map(k=>'<div class="kpi '+k.c+'"><div class="kpi-top"><div class="kpi-icon '+k.i+'"><i class="ti ti-'+k.ic+'"></i></div></div><div class="kpi-value'+(k.sm?' sm':'')+'">'+k.v+'</div><div class="kpi-label">'+k.l+'</div></div>').join('')
 }
 
 // ── CHARTS ──
