@@ -828,6 +828,16 @@ tbody tr:hover {
 .warn-level.l2 { background: var(--fpt-orange-light); color: var(--fpt-orange); }
 .warn-level.l1 { background: var(--border-light); color: var(--text-muted); }
 
+.move-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.move-col-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+.move-col-title.up { color: var(--fpt-green); }
+.move-col-title.down { color: var(--red); }
+.move-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border-light); font-size: 13px; }
+.move-row:last-child { border-bottom: none; }
+.move-row .cls { font-weight: 700; }
+.move-empty { font-size: 12px; color: var(--text-muted); padding: 6px 0; }
+@media (max-width: 700px) { .move-grid { grid-template-columns: 1fr; } }
+
 .status-dot {
   display: inline-block;
   width: 8px;
@@ -1479,7 +1489,7 @@ tbody tr:hover {
 
 /* ── SKELETONS ── */
 .skeleton {
-  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background: linear-gradient(90deg, var(--border-light) 25%, var(--border) 50%, var(--border-light) 75%);
   background-size: 200% 100%;
   animation: skeletonPulse 1.5s infinite ease-in-out;
   border-radius: 4px;
@@ -1840,6 +1850,13 @@ tbody tr:hover {
     <div class="grid-2">
       <div class="panel"><h3>Xu hướng điểm theo ngày</h3><div class="chart-box"><canvas id="chartDaily"></canvas></div></div>
       <div class="panel"><h3>Top lỗi mất điểm nhiều</h3><div class="chart-box"><canvas id="chartTopIssue"></canvas></div></div>
+    </div>
+    <div class="panel" style="margin-top:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3 style="margin:0">Chuyển động tuần này</h3>
+        <span style="font-size:11px;color:var(--text-muted)">So với tuần trước</span>
+      </div>
+      <div id="moveWidget" class="move-grid"></div>
     </div>
   </section>
 
@@ -2405,7 +2422,7 @@ function applyFilters(){
   APP.filteredDetailRows = filtered;
   renderDetailTablePage(1);
 
-  renderWarningTab(officialFiltered);renderTrend('class');
+  renderWarningTab(officialFiltered);renderTrend('class');renderMovementWidget(officialFiltered);
   APP.pendingChartData = {ranking,issues,daily,categories};
   if (APP.activeTab === 'overview') {
     renderCharts(APP.pendingChartData);
@@ -2523,7 +2540,7 @@ function renderCharts(d){
     return;
   }
   clearChartFallbacks();
-  destroyCharts();Chart.defaults.font.family="'Geist',Arial,sans-serif";Chart.defaults.font.size=11;Chart.defaults.color='#6b7280';
+  destroyCharts();Chart.defaults.font.family="'Geist',Arial,sans-serif";Chart.defaults.font.size=11;Chart.defaults.color=chartTextColor();
   const t10=d.ranking.slice(0,10),ti=d.issues.filter(i=>i.minus>0).slice(0,10),dl=d.daily,cats=d.categories.filter(c=>c.count>0);
   APP.charts.c1=new Chart(el('chartTopClass'),{type:'bar',data:{labels:t10.map(x=>x.className),datasets:[{label:'Cộng',data:t10.map(x=>x.plus),backgroundColor:C.green+'cc',borderRadius:4},{label:'Trừ',data:t10.map(x=>-x.minus),backgroundColor:C.red+'cc',borderRadius:4}]},options:{...barO('y'),plugins:{...barO('y').plugins,tooltip:{callbacks:{label:c=>c.dataset.label+': '+Math.abs(c.raw)}}}}});
   APP.charts.c2=new Chart(el('chartTopIssue'),{type:'bar',data:{labels:ti.map(x=>shortT(x.issue,22)),datasets:[{label:'Điểm trừ',data:ti.map(x=>x.minus),backgroundColor:C.red+'bb',borderRadius:4}]},options:barO('y')});
@@ -2555,8 +2572,10 @@ function clearChartFallbacks(){
     }
   });
 }
-function barO(a){return{indexAxis:a==='y'?'y':'x',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'bottom',labels:{padding:10,usePointStyle:true,pointStyle:'circle',font:{size:11}}}},scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{grid:{color:'#f0f1f5'},ticks:{font:{size:10}}}}}}
-function lineO(){return{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{padding:10,usePointStyle:true,pointStyle:'circle',font:{size:11}}}},scales:{x:{grid:{display:false},ticks:{maxRotation:45,font:{size:10}}},y:{grid:{color:'#f0f1f5'},ticks:{font:{size:10}}}}}}
+function chartGridColor(){return getComputedStyle(document.documentElement).getPropertyValue('--border-light').trim()||'#f0f1f5'}
+function chartTextColor(){return getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim()||'#6b7280'}
+function barO(a){return{indexAxis:a==='y'?'y':'x',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'bottom',labels:{padding:10,usePointStyle:true,pointStyle:'circle',font:{size:11}}}},scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{grid:{color:chartGridColor()},ticks:{font:{size:10}}}}}}
+function lineO(){return{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{padding:10,usePointStyle:true,pointStyle:'circle',font:{size:11}}}},scales:{x:{grid:{display:false},ticks:{maxRotation:45,font:{size:10}}},y:{grid:{color:chartGridColor()},ticks:{font:{size:10}}}}}}
 function destroyCharts(){Object.keys(APP.charts).forEach(k=>{try{APP.charts[k].destroy()}catch(e){}});APP.charts={}}
 
 // ── TABLES ──
@@ -2611,7 +2630,22 @@ function renderWarningTab(rows){
   mkTable('tableTopErrors',['#','Lỗi','Loại','Lớp ảnh hưởng','HS ảnh hưởng','Tỷ lệ HS','Lượt','Trừ'],te.map((e,i)=>[i+1,esc(e.i),'<span class="pill">'+esc(e.cat)+'</span>','<strong>'+e.cls.size+'</strong>','<strong>'+e.stu.size+'</strong>',(e.stu.size/totalStudents*100).toFixed(1)+'%',e.cnt,'<span class="text-red">'+fmtN(rd(e.m))+'</span>']))
 }
 
-// ── TREND TAB ──
+// ── CHUYỂN ĐỘNG TUẦN NÀY ──
+function renderMovementWidget(rows){
+  const el2=el('moveWidget'); if(!el2) return;
+  const ws=new Set();rows.forEach(r=>{if(r.week)ws.add(r.week)});
+  const weeks=[...ws].sort((a,b)=>(parseInt(a.replace(/\D/g,''))||0)-(parseInt(b.replace(/\D/g,''))||0));
+  if(weeks.length<2){el2.innerHTML='<div class="move-empty">Cần ít nhất 2 tuần dữ liệu để so sánh</div>';return}
+  const curW=weeks[weeks.length-1],prevW=weeks[weeks.length-2];
+  const sc={};rows.forEach(r=>{if(r.week!==curW&&r.week!==prevW)return;const k=r.className||'?';if(!sc[k])sc[k]={cur:0,prev:0};if(r.week===curW)sc[k].cur+=(+r.point||0);else sc[k].prev+=(+r.point||0)});
+  const moves=Object.entries(sc).map(([c,v])=>({c,delta:v.cur-v.prev})).filter(m=>m.delta!==0);
+  const up=moves.filter(m=>m.delta>0).sort((a,b)=>b.delta-a.delta).slice(0,5);
+  const down=moves.filter(m=>m.delta<0).sort((a,b)=>a.delta-b.delta).slice(0,5);
+  const col=(title,cls,list,sign)=>'<div><div class="move-col-title '+cls+'">'+title+'</div>'+(list.length?list.map(m=>'<div class="move-row"><span class="cls">'+esc(m.c)+'</span><span class="'+(sign==='up'?'text-green':'text-red')+'">'+(sign==='up'?'↑ +':'↓ ')+fmtN(m.delta)+'</span></div>').join(''):'<div class="move-empty">Không có thay đổi</div>')+'</div>';
+  el2.innerHTML = col('Cải thiện nhanh nhất','up',up,'up') + col('Xuống hạng nhanh nhất','down',down,'down');
+}
+
+
 function renderTrend(mode){
   el('btnTrendClass').style.background=mode==='class'?'var(--fpt-orange)':'';el('btnTrendClass').style.color=mode==='class'?'#fff':'';
   el('btnTrendGrade').style.background=mode==='grade'?'var(--fpt-orange)':'';el('btnTrendGrade').style.color=mode==='grade'?'#fff':'';
@@ -3959,6 +3993,7 @@ function toggleTheme(){
   localStorage.setItem('fschp_theme', next);
   const btn = el('themeToggleBtn');
   if(btn) btn.innerHTML = svgIcon(next === 'dark' ? 'sun' : 'moon');
+  if(APP.pendingChartData && typeof Chart !== 'undefined') renderCharts(APP.pendingChartData);
 }
 function showLoading(t){el('loadingText').textContent=t||'Đang tải…';el('loadingOverlay').classList.add('show')}
 function hideLoading(){el('loadingOverlay').classList.remove('show')}
