@@ -690,6 +690,31 @@ body {
   gap: 16px;
   margin-bottom: 16px;
 }
+.section-title-divider {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin: 28px 0 12px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.section-title-divider:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+
+/* ── Tổng quan: thu gọn ── */
+#attendanceOverviewBlock .panel { padding: 14px 18px; margin-bottom: 14px !important; }
+#attendanceOverviewBlock h3 { font-size: 12px; }
+#attendanceOverviewBlock .setting-card { padding: 10px 14px; }
+#attendanceOverviewBlock .setting-card h4 { font-size: 18px; margin-bottom: 2px; }
+#attendanceOverviewBlock .setting-card p { font-size: 11px; }
+#kpiRowWrap .health-card { padding: 14px 18px; }
+#kpiRowWrap .kpi { padding: 14px; }
+#kpiRowWrap .kpi-value { font-size: 22px; margin-top: 10px; }
+#kpiRowWrap .kpi-icon { width: 30px; height: 30px; }
+#tab_overview .panel { padding: 16px 18px; }
+#tab_overview .grid-2 { gap: 14px; margin-bottom: 14px; }
+.chart-box-frameless { background: none; border: none; box-shadow: none; padding: 0; }
 .panel {
   background: var(--card);
   border: 1px solid var(--border);
@@ -1414,6 +1439,40 @@ tbody tr:hover {
   font-weight: 600;
   color: #fff;
 }
+.boot-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  transition: opacity .35s ease, visibility .35s ease;
+}
+.boot-splash.hide { opacity: 0; visibility: hidden; pointer-events: none; }
+.boot-splash-logo {
+  width: 56px; height: 56px;
+  border-radius: 16px;
+  background: var(--fpt-orange-light);
+  color: var(--fpt-orange);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+}
+.boot-splash-title {
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: .06em;
+  color: var(--fpt-orange);
+}
+.boot-splash-msg {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.6;
+}
+.boot-splash-msg span { font-size: 11px; opacity: .8; }
 
 /* ── ALERTS ── */
 .alert {
@@ -1789,6 +1848,12 @@ tbody tr:hover {
   </div>
 </div>
 
+<div class="boot-splash" id="bootSplash">
+  <div class="boot-splash-logo"><i class="ti ti-building-bank"></i></div>
+  <div class="boot-splash-title">FPT SCHOOLS</div>
+  <div class="spinner" style="border-top-color:var(--fpt-orange);width:34px;height:34px"></div>
+  <div class="boot-splash-msg">Đang kết nối máy chủ…<br><span>Có thể mất chút thời gian vào buổi sáng</span></div>
+</div>
 <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div><div class="loading-text" id="loadingText">Đang tải…</div></div>
 
 <div class="layout">
@@ -1857,7 +1922,7 @@ tbody tr:hover {
     </div>
   </div>
 
-  <div class="content-head">
+  <div class="content-head" id="contentHead">
     <div>
       <div class="page-kicker">FPT School Hải Phòng</div>
       <h2 id="pageTitle">Tổng quan nề nếp</h2>
@@ -1886,35 +1951,41 @@ tbody tr:hover {
   </div>
 
   <section id="tab_overview" class="tab-content active">
-    <div class="grid-2">
-      <div class="panel"><h3>Top lớp theo điểm thi đua</h3><div class="chart-box"><canvas id="chartTopClass"></canvas></div></div>
-      <div class="panel"><h3>Cơ cấu theo phân loại</h3><div class="chart-box"><canvas id="chartCategory"></canvas></div></div>
-    </div>
-    <div class="grid-2">
-      <div class="panel"><h3>Xu hướng điểm theo ngày</h3><div class="chart-box"><canvas id="chartDaily"></canvas></div></div>
-      <div class="panel"><h3>Top lỗi mất điểm nhiều</h3><div class="chart-box"><canvas id="chartTopIssue"></canvas></div></div>
-    </div>
-    <div class="panel" style="margin-top:16px">
+    <div class="panel" style="margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
         <h3 style="margin:0">Chuyển động tuần này</h3>
         <span style="font-size:11px;color:var(--text-muted)">So với tuần trước</span>
       </div>
       <div id="moveWidget" class="move-grid"></div>
     </div>
-    <div class="panel" style="margin-top:16px">
+    <div class="panel" style="margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
         <h3 style="margin:0">Học sinh cần theo dõi</h3>
         <span style="font-size:11px;color:var(--text-muted)">Vi phạm lặp lại nhiều tuần liên tiếp</span>
       </div>
       <div id="watchWidget"></div>
     </div>
-    <div class="grid-2" style="margin-top:16px">
+
+    <div class="section-title-divider">Cảnh báo & theo dõi</div>
+    <div class="grid-2">
       <div class="panel"><h3>Top lớp vi phạm nhiều nhất</h3><div id="topClassWidget"></div></div>
       <div class="panel"><h3>Cần xử lý <span id="todoCount" style="font-weight:500;color:var(--text-muted);font-size:11.5px;float:right"></span></h3><div id="todoWidget"></div></div>
     </div>
-    <div class="grid-2" style="margin-top:16px">
+
+    <div class="section-title-divider">Điểm tích cực</div>
+    <div class="grid-2">
       <div class="panel"><h3>Điểm tích cực nổi bật <span style="font-weight:500;color:var(--text-muted);font-size:11.5px;float:right">Tuần này</span></h3><div id="positiveWidget"></div></div>
       <div class="panel"><h3>Giáo viên <span style="font-weight:500;color:var(--text-muted);font-size:11.5px;float:right">Tuần này</span></h3><div id="teacherMiniWidget"></div></div>
+    </div>
+
+    <div class="section-title-divider">Biểu đồ & xu hướng <span style="font-weight:500;text-transform:none;letter-spacing:0">(tham khảo)</span></div>
+    <div class="grid-2">
+      <div class="panel"><h3>Top lớp theo điểm thi đua</h3><div class="chart-box"><canvas id="chartTopClass"></canvas></div></div>
+      <div class="chart-box-frameless"><h3 style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.02em;margin-bottom:12px">Cơ cấu theo phân loại</h3><div class="chart-box"><canvas id="chartCategory"></canvas></div></div>
+    </div>
+    <div class="grid-2">
+      <div class="panel"><h3>Xu hướng điểm theo ngày</h3><div class="chart-box"><canvas id="chartDaily"></canvas></div></div>
+      <div class="panel"><h3>Top lỗi mất điểm nhiều</h3><div class="chart-box"><canvas id="chartTopIssue"></canvas></div></div>
     </div>
   </section>
 
@@ -2273,7 +2344,8 @@ const ICON_PATHS = {
   lock:'<path d="M7 11V8a5 5 0 0 1 10 0v3"/><path d="M5 11h14v10H5z"/><path d="M12 15v2"/>',
   pencil:'<path d="M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4z"/><path d="M13 6l5 5"/>',
   moon:'<path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>',
-  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>'
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>',
+  presentation:'<rect x="3" y="4" width="18" height="12" rx="1"/><path d="M7 20l5-4 5 4M12 16v4"/>'
 };
 
 // ── AUTH ──
@@ -2293,21 +2365,23 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   replaceIconFonts();
   startIconObserver();
   initMobileMenu();
+  const hideBootSplash = ()=>{ const s=el('bootSplash'); if(s) s.classList.add('hide'); };
+  setTimeout(hideBootSplash, 25000); // an toàn: không để splash kẹt mãi nếu có lỗi
   try {
     const res = await authFetch('/data/permissions');
-    if(!res.ok){ doLogout(); return }
+    if(!res.ok){ hideBootSplash(); doLogout(); return }
     const data = await res.json();
     APP.perms = data.permissions;
     APP.user = data.user;
     renderUserHeader();
     buildTabs();
     initDragDrop();
-    fetchData();
+    fetchData().then(hideBootSplash).catch(hideBootSplash);
     startOverviewClock();
     loadOverviewAttendanceSummary();
     if (APP.perms?.can_manage_users) loadUsers();
     loadTeacherAnalysis().then(()=>{ if(APP.lastOfficialFiltered) renderOverviewExtras(APP.lastOfficialFiltered); }).catch(()=>{});
-  } catch(e){ doLogout() }
+  } catch(e){ hideBootSplash(); doLogout() }
 });
 
 function initMobileMenu() {
@@ -2429,6 +2503,7 @@ function switchTab(tid){
   };
   if(el('pageTitle') && titles[tid]){ el('pageTitle').textContent=titles[tid][0]; el('pageDesc').textContent=titles[tid][1]; }
   el('filtersSection').style.display = (tid==='admin'||tid==='attendance'||tid==='audit'||tid==='users'||tid==='settings'||tid==='teacher_admin'||tid==='teacher_analysis')?'none':'';
+  if(el('contentHead')) el('contentHead').style.display = '';
   if(el('kpiRowWrap')) el('kpiRowWrap').style.display = (tid==='overview') ? '' : 'none';
   if(el('attendanceOverviewBlock')) el('attendanceOverviewBlock').style.display = (tid==='overview') ? '' : 'none';
   if(tid==='admin'){ switchRecordSubtab('file', false); maybeLoad('admin', loadFiles); populateQuickClassOptions(); }
@@ -2796,8 +2871,8 @@ function renderOverviewExtras(rows){
 }
 
 
-function renderMovementWidget(rows){
-  const el2=el('moveWidget'); if(!el2) return;
+function renderMovementWidget(rows, targetId){
+  const el2=el(targetId||'moveWidget'); if(!el2) return;
   const ws=new Set();rows.forEach(r=>{if(r.week)ws.add(r.week)});
   const weeks=[...ws].sort((a,b)=>(parseInt(a.replace(/\D/g,''))||0)-(parseInt(b.replace(/\D/g,''))||0));
   if(weeks.length<2){el2.innerHTML='<div class="move-empty">Cần ít nhất 2 tuần dữ liệu để so sánh</div>';return}
@@ -2809,7 +2884,6 @@ function renderMovementWidget(rows){
   const col=(title,cls,list,sign)=>'<div><div class="move-col-title '+cls+'">'+title+'</div>'+(list.length?list.map(m=>'<div class="move-row"><span class="cls">'+esc(m.c)+'</span><span class="'+(sign==='up'?'text-green':'text-red')+'">'+(sign==='up'?'↑ +':'↓ ')+fmtN(m.delta)+'</span></div>').join(''):'<div class="move-empty">Không có thay đổi</div>')+'</div>';
   el2.innerHTML = col('Cải thiện nhanh nhất','up',up,'up') + col('Xuống hạng nhanh nhất','down',down,'down');
 }
-
 
 const DOW_LABELS = {0:'CN',1:'T2',2:'T3',3:'T4',4:'T5',5:'T6',6:'T7'};
 const DOW_ORDER = [1,2,3,4,5,6,0];
