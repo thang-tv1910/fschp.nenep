@@ -1995,7 +1995,7 @@ tbody tr:hover {
       <div class="kpi c-o"><div class="kpi-top"><div class="kpi-icon io"><i class="ti ti-alert-triangle"></i></div></div><div class="kpi-value" id="aKpiTotal">0</div><div class="kpi-label">Tổng lượt vi phạm kỳ này</div></div>
       <div class="kpi c-o"><div class="kpi-top"><div class="kpi-icon io"><i class="ti ti-repeat"></i></div></div><div class="kpi-value" id="aKpiRepeat">0%</div><div class="kpi-label">Tỉ lệ lỗi lặp lại (cùng HS, ≥2 lần)</div></div>
       <div class="kpi c-r"><div class="kpi-top"><div class="kpi-icon ir"><i class="ti ti-user-exclamation"></i></div></div><div class="kpi-value" id="aKpiHigh">0</div><div class="kpi-label">Học sinh cảnh báo mức cao</div></div>
-      <div class="kpi c-p"><div class="kpi-top"><div class="kpi-icon ip"><i class="ti ti-building"></i></div></div><div class="kpi-value" id="aKpiClass">0</div><div class="kpi-label">Lớp cần chú ý</div></div>
+      <div class="kpi c-p"><div class="kpi-top"><div class="kpi-icon ip"><i class="ti ti-building-bank"></i></div></div><div class="kpi-value" id="aKpiClass">0</div><div class="kpi-label">Lớp cần chú ý</div></div>
     </div>
     <div class="grid-2">
       <div class="panel"><h3>Xu hướng theo loại lỗi <span style="font-weight:500;color:var(--text-muted);font-size:11.5px;float:right">8 tuần gần nhất</span></h3><div class="chart-box"><canvas id="chartCategoryTrend"></canvas></div></div>
@@ -2164,7 +2164,7 @@ tbody tr:hover {
 
     <div class="kpis" style="margin-bottom:20px">
       <div class="kpi c-o"><div class="kpi-top"><div class="kpi-icon io"><i class="ti ti-alert-triangle"></i></div></div><div class="kpi-value" id="tKpiTotal">0</div><div class="kpi-label">Tổng lượt vi phạm tuần này</div></div>
-      <div class="kpi c-p"><div class="kpi-top"><div class="kpi-icon ip"><i class="ti ti-building"></i></div></div><div class="kpi-value sm" id="tKpiGroup">—</div><div class="kpi-label">Tổ nhiều lượt nhất</div></div>
+      <div class="kpi c-p"><div class="kpi-top"><div class="kpi-icon ip"><i class="ti ti-building-bank"></i></div></div><div class="kpi-value sm" id="tKpiGroup">—</div><div class="kpi-label">Tổ nhiều lượt nhất</div></div>
       <div class="kpi c-b"><div class="kpi-top"><div class="kpi-icon ib"><i class="ti ti-user-exclamation"></i></div></div><div class="kpi-value sm" id="tKpiTop">—</div><div class="kpi-label">GV bị ghi nhận nhiều nhất</div></div>
       <div class="kpi c-g"><div class="kpi-top"><div class="kpi-icon ig"><i class="ti ti-trending-down"></i></div></div><div class="kpi-value" id="tKpiWoW">—</div><div class="kpi-label">So với tuần trước</div></div>
     </div>
@@ -2345,7 +2345,17 @@ const ICON_PATHS = {
   pencil:'<path d="M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4z"/><path d="M13 6l5 5"/>',
   moon:'<path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>',
   sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>',
-  presentation:'<rect x="3" y="4" width="18" height="12" rx="1"/><path d="M7 20l5-4 5 4M12 16v4"/>'
+  presentation:'<rect x="3" y="4" width="18" height="12" rx="1"/><path d="M7 20l5-4 5 4M12 16v4"/>',
+  repeat:'<path d="M4 12v-3a3 3 0 0 1 3-3h13"/><path d="M17 3l3 3l-3 3"/><path d="M20 12v3a3 3 0 0 1-3 3H4"/><path d="M7 21l-3-3l3-3"/>',
+  'user-exclamation':'<path d="M9 11a4 4 0 1 0 0-8a4 4 0 0 0 0 8z"/><path d="M3 21a6 6 0 0 1 9.5-4.9"/><path d="M19 9v3M19 15h.01"/>',
+  ban:'<circle cx="12" cy="12" r="9"/><path d="M5.7 5.7l12.6 12.6"/>',
+  'clipboard-check':'<path d="M9 5h6M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/><path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M9 12l2 2l4-4"/>',
+  'device-floppy':'<path d="M6 4h10l4 4v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M9 4v5h7V4"/><path d="M8 20v-6h8v6"/>',
+  edit:'<path d="M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4z"/><path d="M13 6l5 5"/>',
+  'file-spreadsheet':'<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 13h8M8 17h8M8 13v4"/>',
+  'mood-smile':'<circle cx="12" cy="12" r="9"/><path d="M9 10h.01M15 10h.01"/><path d="M8 14a4 4 0 0 0 8 0"/>',
+  'trending-down':'<path d="M3 6l7 7l4-4l7 7"/><path d="M21 10v6h-6"/>',
+  upload:'<path d="M12 4v12M8 8l4-4l4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>'
 };
 
 // ── AUTH ──
@@ -2510,6 +2520,7 @@ function switchTab(tid){
   if(tid==='attendance') maybeLoad('attendance', loadAttendanceTab);
   if(tid==='teacher_admin') maybeLoad('teacher_admin', loadTeacherFiles);
   if(tid==='teacher_analysis') maybeLoad('teacher_analysis', loadTeacherAnalysis);
+  if(tid==='analysis' && APP.lastOfficialFiltered) renderCategoryTrendChart(APP.lastOfficialFiltered);
   if(tid==='audit') maybeLoad('audit', loadAuditLogs);
   if(tid==='users') renderUsersTable();
 
