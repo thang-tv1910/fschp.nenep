@@ -9,6 +9,7 @@ from typing import List
 import os
 import re
 import tempfile
+import threading
 import time
 import requests
 from urllib.parse import urlparse
@@ -32,6 +33,19 @@ GLOBAL_ROLES = {"admin", "bangiamhieu", "quanly"}
 UPLOAD_EXTENSIONS = {".xlsx", ".xls"}
 MAX_UPLOAD_BYTES = 15 * 1024 * 1024
 SAFE_FILENAME_RE = re.compile(r"^[\w .()\-]+$", re.UNICODE)
+
+# Perf fix #3: RAM cache cho /data/rows — cùng vai trò/folder mở dashboard nhiều lần
+# trong khoảng ngắn (giờ cao điểm) sẽ dùng lại kết quả đã tính thay vì query lại DB
+# mỗi lần. Cache bị xóa ngay khi có upload/xóa file mới để không hiện dữ liệu cũ.
+_DATA_ROWS_CACHE: dict[str, tuple[float, dict]] = {}
+_DATA_ROWS_CACHE_LOCK = threading.Lock()
+DATA_ROWS_CACHE_TTL_SECONDS = 90
+
+
+def invalidate_data_rows_cache():
+    with _DATA_ROWS_CACHE_LOCK:
+        _DATA_ROWS_CACHE.clear()
+
 
 app = FastAPI(title="FSCHP Nề nếp API")
 
@@ -563,6 +577,8 @@ def save_rows_to_db(
     conn.commit()
     conn.close()
 
+    invalidate_data_rows_cache()
+
     return {
         "file_id": file_id,
         "replaced": replaced,
@@ -573,7 +589,7 @@ def save_rows_to_db(
 
 
 @app.post("/upload/excel")
-async def upload_excel(
+def upload_excel(
     file: UploadFile = File(...),
     overwrite: bool = Form(False),
     reason: str = Form(""),
@@ -695,10 +711,17 @@ def upload_drive_link(
 
 @app.get("/data/rows")
 def get_all_rows(current_user: dict = Depends(get_current_user)):
-    conn = get_conn()
     role = current_user["role"]
     folder = normalize_user_folder(current_user)
+    cache_key = "ALL" if role in GLOBAL_ROLES else f"folder:{folder}"
 
+    now = time.time()
+    with _DATA_ROWS_CACHE_LOCK:
+        cached = _DATA_ROWS_CACHE.get(cache_key)
+        if cached and now - cached[0] < DATA_ROWS_CACHE_TTL_SECONDS:
+            return cached[1]
+
+    conn = get_conn()
     if role in GLOBAL_ROLES:
         rows = conn.execute("""
             SELECT * FROM discipline_records
@@ -712,7 +735,11 @@ def get_all_rows(current_user: dict = Depends(get_current_user)):
         """, (folder,)).fetchall()
 
     conn.close()
-    return {"rows": [public_row(r) for r in rows], "total": len(rows)}
+
+    payload = {"rows": [public_row(r) for r in rows], "total": len(rows)}
+    with _DATA_ROWS_CACHE_LOCK:
+        _DATA_ROWS_CACHE[cache_key] = (now, payload)
+    return payload
 
 
 @app.get("/data/files")
@@ -797,6 +824,8 @@ def delete_file_data(file_id: int, current_user: dict = Depends(get_current_user
 
     conn.commit()
     conn.close()
+
+    invalidate_data_rows_cache()
 
     return {
         "message": "Đã xóa",
@@ -1165,7 +1194,7 @@ def upsert_teacher(cur, full_name: str, subject_group: str, specialty: str) -> i
 
 
 @app.post("/api/teacher/upload")
-async def upload_teacher_excel(
+def upload_teacher_excel(
     file: UploadFile = File(...),
     current_user: dict = Depends(require_teacher_access)
 ):
